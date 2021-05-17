@@ -28,3 +28,12 @@ posts.
 ```
 $ bundle exec jekyll serve --watch --livereload --draft
 ```
+
+# License
+
+Unless otherwise noted, the contents of my webpage are licensed under the
+[Creative Commons Attribution 4.0 International License]. Code used to format
+and display the content is licensed under the [MIT license].
+
+[Creative Commons Attribution 4.0 International License]: https://creativecommons.org/licenses/by/4.0/
+[MIT license]: https://opensource.org/licenses/MIT
