@@ -171,18 +171,42 @@ to use a different file system.
 Next, we need to decide how our newly formatted partitions will be mounted. If
 you didn't choose to use [btrfs], the straightforward scheme is to just mount
 your new root directory at `/mnt` and then mount the EFI system partition at
-`/mnt/boot` (assuming you want to put your kernel image in the EFI system
-partition).
+`/mnt/boot` (if you don't want to put your kernel image in the EFI system
+partition, then do `/mnt/efi` instead).
 
-However, with btrfs, we have the option of creating separate [subvolumes] so
-that we can snapshot them separately from each other. In btrfs, a [snapshot] is
-just a subvolume that starts off pointing to the metadata/data of another
-subvolume. Once the snapshot is created, its metadata/data is essentially
+However, with btrfs, we have some additional options. First, you should decide
+whether to mount the btrfs directory with
+[compression](https://btrfs.wiki.kernel.org/index.php/Compression)
+enabled. I don't have any hard data on this, but for a hard drive, enabling
+compression is pretty much a no-brainer since disk IO is slow enough to make it
+worth the CPU cost to reduce it. For SSDs though, it's probably a perfomance
+hit most of the time. Still, if disk space is more important to you, the
+[perfomance penalty](https://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git/commit/?h=next&id=5c1aab1dd5445ed8bdcdbb575abc1b0d7ee5b2e7)
+is likely worth it (e.g. our VM with only 32 GB of space). If perfomance is
+more important, you could choose the LZO algorithm since it is the fastest, but
+at that point, you should probably just not enable compression at all. If you
+do decide to enable compression, you should mount with the option
+`compress=zstd` since the ZSTD algorithm seems better than the default ZLIB.
+
+Next, you should mount with the [`noatime`] option. In general, this is a
+useful optimization for any file system when you don't need access times for
+your files, but this is especially true for btrfs since metadata updates are
+implemented via copying which makes updating the access time even more
+expensive.
+
+[`noatime`]: https://btrfs.wiki.kernel.org/index.php/Manpage/btrfs(5)#NOTES_ON_GENERIC_MOUNT_OPTIONS
+
+#### Subvolume Layout
+
+Finally, before we start mounting things, we should figure out how we want to
+lay out our [subvolumes]. Subvolumes act as directory-like mount points that
+maintain their own file tree even though they are all part of the same file
+system. Most usefully for us, subvolumes support snapshotting. In btrfs, a
+[snapshot] is just a subvolume that starts off the same as the file tree of
+another subvolume. Once the snapshot is created, its file tree is essentially
 independent of the original subvolume e.g. modifications to one will not affect
 the other. Cheap snapshotting is one of the main advantages of a
-[copy-on-write] file system. Note that snapshots of a subvolume will not
-include subvolumes inside the subvolume and those will appear as an empty
-directory.
+[copy-on-write] file system.
 
 [subvolumes]: https://btrfs.wiki.kernel.org/index.php/SysadminGuide#Subvolumes
 [snapshot]: https://btrfs.wiki.kernel.org/index.php/SysadminGuide#Snapshots
@@ -190,30 +214,37 @@ directory.
 To start off, there are a
 [few basic approaches](https://btrfs.wiki.kernel.org/index.php/SysadminGuide#Layout)
 to layout your btrfs subvolumes. Feel free to come up with your own, but here's
-the layout of my subvolumes and where they are mounted:
+the layout of my subvolumes and how they are mounted into the system.
+Subvolumes are prefixed with `@` and normal directories are suffixed with `/`.
 
 ```
-btrfs         -> /.btrfs
-├── home      -> /home
-├── root      -> /
-├── snapshots
-│   ├── home
-│   │   ├── 2020-02-20T20:20:20
-│   │   ├── 2021-02-21T21:21:21
-│   │   └── my_snapshot
-│   └── root
-│       ├── 2002-02-02T02:02:02
-│       ├── 2003-03-03T03:03:03
-│       └── before_install_foo
-└── swap
+toplevel       -> /.btrfs
+├── @home      -> /home
+├── @root      -> /
+├── snapshots/
+│   ├── home/
+│   │   ├── @2020-02-20T20:20:20
+│   │   ├── @2021-02-21T21:21:21
+│   │   └── @my_snapshot
+│   └── root/
+│       ├── @2002-02-02T02:02:02
+│       ├── @2003-03-03T03:03:03
+│       └── @before_install_foo
+└── @swap
 ```
 
 The `/.btrfs` mount point exists to make it convenient to access all the other
-subvolumes/snapshots. The `home` and `root` subvolumes are separate since most
-of the time you'd want to restore them separately from each other (e.g. I
-deleted my documents vs I need to downgrade a package). The `swap` subvolume is
-for storing a [swapfile] since it requires that the containing subvolume is not
+subvolumes/snapshots. `@home` and `@root` are separate subvolumes since most of
+the time you'd want to restore them separately from each other (e.g. I deleted
+my documents vs I need to downgrade a package). The `swap` subvolume is for
+storing a [swap file] since it requires that the containing subvolume is not
 snapshotted or compressed.
+
+To actually create this layout, you should first mount the btrfs top-level
+somewhere (e.g. `/btrfs`) so you can `cd` in and start creating the subvolume
+and directory structure. To continue with the rest of the installation, you
+should mount the `@root` subvolume at `/mnt` and then the EFI system partition
+at `/mnt/boot`.
 
 ## Installation and Configuration
 
