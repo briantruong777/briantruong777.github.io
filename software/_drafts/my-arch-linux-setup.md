@@ -32,23 +32,24 @@ Key choices I made:
 | Networking           | [systemd-networkd] |
 | Firewall             | TODO               |
 
-[systemd-boot]: https://www.freedesktop.org/wiki/Software/systemd/systemd-boot/
-[dm-crypt]: https://en.wikipedia.org/wiki/Dm-crypt
-[btrfs]: https://btrfs.wiki.kernel.org/index.php/Main_Page
+[systemd-boot]: https://wiki.archlinux.org/title/Systemd-boot
+[dm-crypt]: https://wiki.archlinux.org/title/Dm-crypt
+[btrfs]: https://wiki.archlinux.org/title/btrfs
 [i3]: https://i3wm.org/
 [Swap file]: https://wiki.archlinux.org/title/Swap#Swap_file
-[systemd-networkd]: https://www.freedesktop.org/software/systemd/man/systemd-networkd.service.html
+[systemd-networkd]: https://wiki.archlinux.org/title/Systemd-networkd
 
 Obviously this guide is based on the [installation guide] and in fact should be
 followed in conjunction with that guide since I don't plan on covering every
-detail here. In general, the [ArchWiki] is an excellent resource and honestly
-one of the strongest strengths of Arch Linux. It's even useful when you aren't
-running Arch.
+detail here nor will I include the specific commands you need to run. In
+general, the [ArchWiki] is an excellent resource and honestly one of the
+strongest strengths of Arch Linux. It's even useful when you aren't running
+Arch.
 
 [installation guide]: https://wiki.archlinux.org/title/Installation_guide
 [ArchWiki]: https://wiki.archlinux.org/
 
-## Pre-installation Setup
+## Pre-installation
 
 To start off, download an installation image and then create a new VM in
 VirtualBox. There are a variety of settings you can configure as you like, but
@@ -112,7 +113,7 @@ small and you may be forced to put the kernel on a separate partition.
 
 [^2]: This attack vector is known as the [Evil Maid Attack]. The correct way to prevent this is to use [Secure Boot], but in my opinion, that is overkill unless you worried about an intelligence agency coming for you.
 [Evil Maid Attack]: https://www.schneier.com/blog/archives/2009/10/evil_maid_attac.html
-[Secure Boot]: https://en.wikipedia.org/wiki/Unified_Extensible_Firmware_Interface#Secure_boot
+[Secure Boot]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot
 
 There are many tools that can be used to actually partition the drive so choose
 whatever suits you (I personally just use `fdisk`). The ArchWiki recommends
@@ -218,7 +219,7 @@ the layout of my subvolumes and how they are mounted into the system.
 Subvolumes are prefixed with `@` and normal directories are suffixed with `/`.
 
 ```
-toplevel       -> /.btrfs
+top-level      -> /.btrfs
 ├── @home      -> /home
 ├── @root      -> /
 ├── snapshots/
@@ -243,9 +244,137 @@ snapshotted or compressed.
 To actually create this layout, you should first mount the btrfs top-level
 somewhere (e.g. `/btrfs`) so you can `cd` in and start creating the subvolume
 and directory structure. To continue with the rest of the installation, you
-should mount the `@root` subvolume at `/mnt` and then the EFI system partition
-at `/mnt/boot`.
+should mount the `@root` subvolume at `/mnt`, the EFI system partition at
+`/mnt/boot`, and then the btrfs top-level subvolume at `/mnt/.btrfs` (we will
+do the `@home` subvolume later).
 
-## Installation and Configuration
+## Installation
 
-## Post-installation Setup
+Next, you will use `pacstrap` to install the necessary packages to the root
+directory of your new system (mounted at `/mnt`). You should include any
+additional packages that would be useful to have while you are setting up
+everything else. Some packages I like to install early since they are pretty
+helpful even without configuration:
+
+* [`btrfs-progs`]
+  * Provides user-space tools for working with btrfs. Note that this package is
+    basically a necessity because when you generate the initramfs via
+    `mkinitcpio`, it will be unable to run the fsck build hook without this.
+* [`neovim`]
+  * Unless you want to use `echo` and `sed`, there is no text editor included,
+    so I highly recommend installing one. Obviously you can use whatever text
+    editor you like, but `neovim` is a great choice for people who are fans of
+    `vim` since it is nearly drop-in compatible but has sensible defaults.
+* [`fish`]
+  * Though chances are you are already familiar with `bash`, `fish` is a nice
+    shell that includes advance features (syntax highlighting, auto-complete)
+    without requiring any configuration. However, you shouldn't replace your
+    login shell with it since it is not POSIX compliant so scripts are likely
+    to break. If you want something you can replace your login shell with and
+    that is closer to `bash`, [`zsh`] is a good choice, but it requires a bit
+    of configuration before it gets to the same level as `fish`.
+* [`tmux`]
+  * Having a terminal multiplexer allows you to actually have a scrollback
+    buffer in the Linux console[^3] which is useful before you get a graphical
+    environment set up. It also lets you open multiple terminals and copy/paste
+    between them.
+
+[`btrfs-progs`]: https://wiki.archlinux.org/title/btrfs#Preparation
+[`neovim`]: https://wiki.archlinux.org/title/Neovim
+[`fish`]: https://wiki.archlinux.org/title/fish
+[`zsh`]: https://wiki.archlinux.org/title/zsh
+[`tmux`]: https://wiki.archlinux.org/title/Tmux
+[^3]: You may be thinking that the Linux console already had scrollback capabilities by itself. Don't worry, you're not crazy. [It was removed somewhat recently due to bitrot of the code](https://www.phoronix.com/scan.php?page=news_item&px=Linux-5.9-Drops-Soft-Scrollback). Actually, it's possible by the time you are reading this, it was restored back already.
+
+Take all these packages and the base packages to the `pacstrap` command and
+then run it.
+
+TODO: figure out if you can mount `@home` earlier.
+
+After all the typical directories are set up in `/mnt`, now you should mount
+the `@home` btrfs subvolume to `/mnt/home`. This way, when you run `genfstab`,
+those mount points will be included.
+
+After you run `genfstab`, you will want to modify the `/etc/fstab` file to
+remove the `subvolid=` mount option. A common way to restore a snapshot is to
+`mv` the `@root` subvolume to `@root_old` and then make a snapshot of the
+snapshot and put the new snapshot at `/@root`. However, if you leave the
+`subvolid=` in, the mounting will fail since the subvolume ID will be
+different.
+
+After you've run `arch-chroot`, you will now be acting as if you are inside the
+system. You should set up the time zone, hardware clock, locale, keyboard
+layout, and root password.
+
+### Networking
+
+For a VM or a simple wired connection, the networking setup is pretty simple.
+The particular details depend on how you've configured the virtual network
+card, but just using the basic [systemd-networkd] should be fine for most
+cases. You will likely also need [systemd-resolved] in order to resolve DNS
+requests.
+
+[systemd-resolved]: https://wiki.archlinux.org/title/Systemd-resolved
+
+Wireless configuration is more complicated. [NetworkManager] is probably the
+simplest way to get things working since it has a GUI which makes adding new
+wireless networks easy. Otherwise, I don't have much advice here so feel free
+to explore other solutions.
+
+[NetworkManager]: https://wiki.archlinux.org/title/NetworkManager
+
+### initramfs
+
+Though `pacstrap` already created an initramfs, it won't actually work for us
+since we need to decrypt our root directory partition when we boot. The main
+thing we need to do is update the
+[list of hooks](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_mkinitcpio).
+Unless you have multiple encrypted drives (or encrypted with a detached LUKS
+header), it should be fine to stick with the `encrypt` hook instead of
+`sd-encrypt`, but you will need to choose the latter if you do need those
+features. `sd-encrypt` will require you to switch out other hooks for the
+systemd equivalents.
+
+Don't forget to run `mkinitcpio -P` otherwise your changes won't take effect!
+
+### Boot Loader
+
+The last thing we need to do before we can boot into our system is set up a
+boot loader. There are multiple boot loaders you can choose from, but we will
+use [systemd-boot] since it is already included and quite simple. Note that it
+only supports UEFI and not BIOS so if you are operating in BIOS mode, you will
+need to choose another boot loader.
+
+Be sure to configure things correctly otherwise your system won't boot. For
+systemd-boot in particular, you will need to create a loader entry that will
+load the OS. You will also need to ensure you set the correct kernel parameters
+for
+[decrypting the root directory](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_the_boot_loader)
+and [mounting the correct btrfs subvolume](https://wiki.archlinux.org/title/btrfs#Mounting_subvolume_as_root)
+(use the path `/@root` so it's easy to restore a snapshot). I'd also recommend
+setting the `editor` option to `no` so that people who boot your system cannot
+modify the kernel parameters before logging in (though feel free to do this
+later if you think you'll need to change the flags frequently for initial
+setup).
+
+Finally, if you are installing this on a real machine, you should install the
+correct [microcode] for your CPU.
+
+[microcode]: https://wiki.archlinux.org/title/Microcode
+
+
+### Reboot
+
+Congrats! You should now have a functioning Arch Linux system (in theory). At
+this point, you should exit the chroot. Feel free to try `umount -R /mnt` to
+see if there is still some process busy reading/writing to something (use
+`fuser` to figure out who). Finally, you need to reboot the machine to see if
+your new OS boots up.
+
+If things didn't go so well, you should try to investigate what the problem is.
+Double check this guide and the [installation guide] to make sure you followed
+all the steps.
+
+## Post-installation
+
+TODO
