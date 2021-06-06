@@ -18,32 +18,35 @@ of this applies to my other setups as well.
 ## Overview
 
 Rather than just going through all the steps, I will focus on explaining the
-reasoning behind my decisions. After all, the benefit of Arch is that you get
+rationale behind my decisions. After all, the benefit of Arch is that you get
 to make the choice, and I would hate to completely take that away from you.
+Note that this guide is aimed at a virtual machine setup so I've purposefully
+gone with a simpler setup since a VM usually doesn't need as much
+functionality. Here are some of the key choices I made:
 
-Key choices I made:
-
-| Boot loader          | [systemd-boot]     |
-| Full disk encryption | [dm-crypt]         |
-| File system          | [btrfs]            |
-| Window manager       | [i3]               |
-| Swap                 | [Swap file]        |
-| Hibernation          | Not supported      |
-| Networking           | [systemd-networkd] |
-| Firewall             | TODO               |
+| Boot loader          | [systemd-boot]                            |
+| Full disk encryption | [dm-crypt]                                |
+| File system          | [btrfs]                                   |
+| Window manager       | [i3]                                      |
+| Swap                 | [Swap file]                               |
+| Hibernation          | Not supported                             |
+| Networking           | [systemd-networkd] and [systemd-resolved] |
+| Firewall             | TODO                                      |
 
 [systemd-boot]: https://wiki.archlinux.org/title/Systemd-boot
 [dm-crypt]: https://wiki.archlinux.org/title/Dm-crypt
 [btrfs]: https://wiki.archlinux.org/title/btrfs
-[i3]: https://i3wm.org/
+[i3]: https://wiki.archlinux.org/title/i3
 [Swap file]: https://wiki.archlinux.org/title/Swap#Swap_file
 [systemd-networkd]: https://wiki.archlinux.org/title/Systemd-networkd
+[systemd-resolved]: https://wiki.archlinux.org/title/Systemd-resolved
 
-Obviously this guide is based on the [installation guide] and in fact should be
-followed in conjunction with that guide since I don't plan on covering every
-detail here nor will I include the specific commands you need to run. In
-general, the [ArchWiki] is an excellent resource and honestly one of the
-strongest strengths of Arch Linux. It's even useful when you aren't running
+
+This guide is intended to be a companion to the [installation guide] and not a
+replacement since I don't plan on covering every detail here nor will I include
+the specific commands you need to run. In general, the [ArchWiki] is an
+excellent resource and honestly one of the strongest strengths of Arch Linux so
+feel free to consult it at any point. It's even useful when you aren't running
 Arch.
 
 [installation guide]: https://wiki.archlinux.org/title/Installation_guide
@@ -58,20 +61,33 @@ there are a few recommendations I would make.
 First, enable EFI mode. Though it's perfectly fine to stick to BIOS mode, most
 modern computers are using UEFI, so you might as well get used to it. If you do
 decide to stick with BIOS mode, you'll need to choose a different boot loader
-than [systemd-boot].
+than [systemd-boot] since it only supports UEFI.
 
-Second, I recommend choosing the disk size wisely. Though it's possible to
-resize things later, it's more convenient to ensure you have enough space from
-the beginning. Arch can be run very lightweight, but in my experience, 8 GB is
-as low as you'd want to go and still have an acceptable desktop environment.
-Even then, space will be tight if you start installing a lot of larger packages
-(LaTeX, fonts, etc.) and that's not even including your own files. I personally
-go with 32 GB so I don't need to worry about it.
+Second, for VMs I recommend choosing the disk size wisely. Though it's possible
+to resize things later (or add more drives if you use [btrfs]), it's more
+convenient to ensure you have enough space from the beginning. Arch can be run
+very lightweight, but in my experience, 8 GB is as low as you'd want to go and
+still have an acceptable desktop environment. Even then, space will be tight if
+you start installing a lot of larger packages (LaTeX, fonts, etc.) and that's
+not even including your own files. I personally go with 32 GB so I don't need
+to worry too much about it.
 
 Set up the VM to boot from the installation image and then boot it. This will
 bring you into a live installation of Arch Linux that you will use to set up
-your actual installation. Start by confirming you are running in UEFI mode and
-have internet access. Then ensure the system clock is synced via NTP.
+your actual installation. Note that you may want to do everything inside
+[`tmux`] so you can scrollback to previous output[^1] and copy/paste between
+multiple terminals.
+
+Start off with the first basic steps of:
+1. Set the keyboard layout if needed.
+1. Set the console font if desired (I like `Lat2-Terminus16` which is just
+   [`terminus-font`]).
+1. Confirm you are running in UEFI mode.
+1. Confirm you have internet access.
+1. Enable NTP for the system clock.
+
+[^1]: You may be thinking that the Linux console previously had scrollback capabilities by itself. Don't worry, you're not crazy. [It was removed somewhat recently due to bit rot of the code](https://www.phoronix.com/scan.php?page=news_item&px=Linux-5.9-Drops-Soft-Scrollback). Actually, it's possible by the time you are reading this, it was restored back already in which case maybe `tmux` will be less useful.
+[`terminus-font`]: https://archlinux.org/packages/community/any/terminus-font/
 
 ### Disk Partitioning
 
@@ -79,45 +95,48 @@ There are many ways to partition the disk for a Linux install depending on your
 needs. This guide will aim to keep things simple, but before we start, there
 are a few things to keep in mind.
 
-First, since we are booting in UEFI mode, using [GPT] is recommended over [MBR]
-since it is more flexible and better supported by motherboards and operating
-systems implementing UEFI[^1]. Second, UEFI requires an [EFI system partition]
-since that is where UEFI will look for boot loaders to run. Given that we are
-trying to keep it simple, we will only have 2 partitions:
+First, using [GPT] is recommended over [MBR] for booting in UEFI mode since it
+is more flexible and better supported by motherboards and operating systems
+implementing UEFI[^2]. Second, UEFI requires an [EFI system partition] since
+that is where UEFI will look for boot loaders to run. Given that we are trying
+to keep it simple, we will only have 2 partitions:
 
 1. EFI system partition
-1. Encrypted root directory partition (i.e. everything underneath `/`)
+1. Encrypted root directory partition
 
 [GPT]: https://en.wikipedia.org/wiki/GUID_Partition_Table
 [MBR]: https://en.wikipedia.org/wiki/Master_boot_record
-[^1]: The ArchWiki's entry on [partitioning](https://wiki.archlinux.org/title/Partitioning#Choosing_between_GPT_and_MBR) describes these reasons in more detail, but in general, there's little reason to use MBR unless you are stuck with legacy hardware.
+[^2]: The ArchWiki's entry on [partitioning](https://wiki.archlinux.org/title/Partitioning#Choosing_between_GPT_and_MBR) describes these reasons in more detail, but in general, there's little reason to use MBR unless you are stuck with legacy hardware.
 [EFI system partition]: https://en.wikipedia.org/wiki/EFI_system_partition
 
 We will not need a swap partition because we will be using a [swap file]
 instead. Swap files are convenient to resize (or even delete entirely to free
-up a bit of space). However, if you choose to run [btrfs] and wish to add more
-disks in the future, you may want to use a swap partition since btrfs doesn't
-support swap files on filesystems with multiple disks. On a VM, increasing the
-disk's size isn't that hard, but on a real machine, just adding another disk is
-way more convenient.
+up space in a pinch). However, if you choose to run [btrfs] and wish to add
+more disks in the future, you may want to use a swap partition since
+[btrfs doesn't support swap files on filesystems with multiple disks](https://btrfs.wiki.kernel.org/index.php/FAQ#Does_Btrfs_support_swap_files.3F).
+On a VM, increasing the disk's size isn't that hard, but on a real machine,
+adding another disk is a much simpler option than trying to copy everything on
+the smaller disk onto a larger disk.
 
 Though the OS can be in a separate partition, we will keep the kernel image in
 the EFI system partition since we will not be encrypting our kernel image. In
-theory, encrypting the kernel will prevent an attacker with physical access
-from modifying the kernel, but in reality this won't stop them since they can
-just modify the boot loader instead[^2]. With this in mind, the EFI system
-partition is a convenient alternative, but we could've created another
-partition just for the kernel. Note that if you are installing Arch on a system
-that already has an EFI system partition, the existing partition may be too
-small and you may be forced to put the kernel on a separate partition.
+theory, encrypting the kernel will prevent an attacker from modifying the
+kernel, but in reality this won't stop them since they can just modify the boot
+loader instead[^3]. With this in mind, the EFI system partition is a convenient
+alternative, but we could've created another partition just for the kernel.
+Note that if you are installing Arch on a system that already has an EFI system
+partition, [the existing partition may be too small](https://wiki.archlinux.org/title/Dual_boot_with_Windows#The_EFI_system_partition_created_by_Windows_Setup_is_too_small)
+and you may be forced to put the kernel on a separate partition. Either you'll
+need to use [systemd-boot's XBOOTLDR](https://wiki.archlinux.org/title/Systemd-boot#Installation_using_XBOOTLDR)
+or use a different boot loader.
 
-[^2]: This attack vector is known as the [Evil Maid Attack]. The correct way to prevent this is to use [Secure Boot], but in my opinion, that is overkill unless you worried about an intelligence agency coming for you.
+[^3]: This attack vector is known as the [Evil Maid Attack]. The correct way to prevent this is to use [Secure Boot], but in my opinion, that is overkill unless you worried about an intelligence agency coming for you.
 [Evil Maid Attack]: https://www.schneier.com/blog/archives/2009/10/evil_maid_attac.html
 [Secure Boot]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot
 
-There are many tools that can be used to actually partition the drive so choose
-whatever suits you (I personally just use `fdisk`). The ArchWiki recommends
-making the EFI system partition 260 MB which I believe comes from the
+There are many tools that can be used to partition the drive so choose whatever
+suits you (I personally just use `fdisk`). The ArchWiki recommends making the
+EFI system partition 260 MB which I believe comes from the
 [minimum FAT32 partition size on certain drives](https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/configure-uefigpt-based-hard-drive-partitions#system-partition).
 Use the remainder of the disk as the second partition which will be storing the
 root directory.
@@ -126,41 +145,38 @@ root directory.
 
 We will be using [dm-crypt] to encrypt the entire root directory partition. The
 main reason to do this is to prevent someone from accessing your data if your
-hard drive is stolen. However, you will need to type in the decryption password
-every time you boot the system. For convenience, I usually make the decryption
-password the same as my login password which is secure enough for me (though
-note that nothing will keep the passwords in sync).
+hard drive is stolen. However, you will need to type in the encryption password
+every time you boot the system. For convenience, I usually make the encryption
+password the same as my login password which is secure enough for me (note that
+by default nothing will keep the passwords in sync).
 
-Following
-[these instructions](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#LUKS_on_a_partition),
+Following [these instructions](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#LUKS_on_a_partition),
 you should first encrypt the partition via the `cryptsetup` command and set it
 up to be mounted at `/dev/mapper/cryptroot`. At this point,
 `/dev/mapper/cryptroot` represents the unencrypted drive so anything you write
 there will be encrypted. Now, there are still more steps necessary to set up
 automatic decryption of the partition at boot time, but we will get to that
-later when we set up initramfs.
+later when we set up [initramfs](#initramfs).
 
 ### Format Partitions
 
-Next, you will need to format each partition with the correct file system. The
-EFI system partition must be FAT32 (e.g. `mkfs.fat -F32 /dev/sda1`), but your
-root directory partition can be whatever you like. If you encrypted your root
-directory partition, ensure that you are formatting the unencrypted mount point
-(e.g. `/dev/mapper/cryptroot`) rather than the partition itself otherwise you
-will destroy the encryption. In this guide, we will be using [btrfs] since it
-supports snapshots and automatic compression.
+Next, you will need to format each partition with the correct file system.
+[The EFI system partition should be FAT32](https://wiki.archlinux.org/title/EFI_system_partition#Format_the_partition),
+but your root directory partition can be whatever you like. If you encrypted
+your root directory partition, ensure that you are formatting the unencrypted
+mount point (e.g. `/dev/mapper/cryptroot`) rather than the partition itself
+otherwise you will destroy the encryption. In this guide, we will be using
+[btrfs] since it supports snapshots and automatic compression.
 
 Now before we get any further, I know that btrfs has a pretty bad reputation
 for losing data which is pretty much the worst possible thing a file system
 could do. This is especially ironic since it is a [copy-on-write] file system
-which are traditionally considered to be safer from corruptions since they
+which is traditionally considered to be safer from corruptions since they
 easily support atomic operations due to simply never overwriting previous
 data/metadata. I believe most of these fears were due to people using btrfs
-with a RAID5/6 setup which
-[still isn't supported by btrfs](https://btrfs.wiki.kernel.org/index.php/RAID56).
-Even ignoring that, there are still plenty of horror stories. I don't have much
-experience with btrfs, but it has a lot of nice features and enough people
-saying good things about it (it's now the
+with a RAID5/6 setup [which even now isn't supported by btrfs](https://btrfs.wiki.kernel.org/index.php/RAID56).
+Anyway, I don't have much experience with btrfs, but it has a lot of nice
+features and enough people saying good things about it (it's now the
 [default for Fedora](https://fedoraproject.org/wiki/Changes/BtrfsByDefault))
 for me to justify using it. Still, if its reputation scares you off, feel free
 to use a different file system.
@@ -173,10 +189,10 @@ Next, we need to decide how our newly formatted partitions will be mounted. If
 you didn't choose to use [btrfs], the straightforward scheme is to just mount
 your new root directory at `/mnt` and then mount the EFI system partition at
 `/mnt/boot` (if you don't want to put your kernel image in the EFI system
-partition, then do `/mnt/efi` instead).
+partition, then do `/mnt/efi` instead). However, with btrfs, we have some
+additional options to consider.
 
-However, with btrfs, we have some additional options. First, you should decide
-whether to mount the btrfs directory with
+First, you should decide whether to mount the btrfs directory with
 [compression](https://btrfs.wiki.kernel.org/index.php/Compression)
 enabled. I don't have any hard data on this, but for a hard drive, enabling
 compression is pretty much a no-brainer since disk IO is slow enough to make it
@@ -192,28 +208,27 @@ do decide to enable compression, you should mount with the option
 Next, you should mount with the [`noatime`] option. In general, this is a
 useful optimization for any file system when you don't need access times for
 your files, but this is especially true for btrfs since metadata updates are
-implemented via copying which makes updating the access time even more
-expensive.
+implemented via copying the metadata which makes updating the access time even
+more expensive.
 
 [`noatime`]: https://btrfs.wiki.kernel.org/index.php/Manpage/btrfs(5)#NOTES_ON_GENERIC_MOUNT_OPTIONS
 
 #### Subvolume Layout
 
-Finally, before we start mounting things, we should figure out how we want to
-lay out our [subvolumes]. Subvolumes act as directory-like mount points that
-maintain their own file tree even though they are all part of the same file
-system. Most usefully for us, subvolumes support snapshotting. In btrfs, a
-[snapshot] is just a subvolume that starts off the same as the file tree of
-another subvolume. Once the snapshot is created, its file tree is essentially
-independent of the original subvolume e.g. modifications to one will not affect
-the other. Cheap snapshotting is one of the main advantages of a
-[copy-on-write] file system.
+Before we start mounting things, we should figure out how we want to lay out
+our [subvolumes]. Subvolumes act as directory-like mount points that maintain
+their own file tree even though they are all part of the same file system. Most
+usefully for us, subvolumes support snapshotting. In btrfs, a [snapshot] is
+just a subvolume that starts off with the same file tree of another subvolume.
+Once the snapshot is created, its file tree is modified independently of the
+original subvolume e.g. writes to one subvolume will not affect files in the
+other. Cheap snapshotting is one of the main advantages of a [copy-on-write]
+file system.
 
 [subvolumes]: https://btrfs.wiki.kernel.org/index.php/SysadminGuide#Subvolumes
 [snapshot]: https://btrfs.wiki.kernel.org/index.php/SysadminGuide#Snapshots
 
-To start off, there are a
-[few basic approaches](https://btrfs.wiki.kernel.org/index.php/SysadminGuide#Layout)
+To start off, there are a [few basic approaches](https://btrfs.wiki.kernel.org/index.php/SysadminGuide#Layout)
 to layout your btrfs subvolumes. Feel free to come up with your own, but here's
 the layout of my subvolumes and how they are mounted into the system.
 Subvolumes are prefixed with `@` and normal directories are suffixed with `/`.
@@ -244,15 +259,19 @@ snapshotted or compressed.
 To actually create this layout, you should first mount the btrfs top-level
 somewhere (e.g. `/btrfs`) so you can `cd` in and start creating the subvolume
 and directory structure. To continue with the rest of the installation, you
-should mount the `@root` subvolume at `/mnt`, the EFI system partition at
-`/mnt/boot`, and then the btrfs top-level subvolume at `/mnt/.btrfs` (we will
-do the `@home` subvolume later).
+should mount everything:
+
+* `@root` subvolume at `/mnt`
+* `@home` subvolume at `/mnt/home`
+* EFI system partition at `/mnt/boot`
+* btrfs top-level subvolume at `/mnt/.btrfs`
+* `@swap` subvolume at `/mnt/swap` (don't forget to disable compression)
 
 ## Installation
 
 Next, you will use `pacstrap` to install the necessary packages to the root
-directory of your new system (mounted at `/mnt`). You should include any
-additional packages that would be useful to have while you are setting up
+directory of your new system which is mounted at `/mnt`. You should include
+any additional packages that would be useful to have while you are setting up
 everything else. Some packages I like to install early since they are pretty
 helpful even without configuration:
 
@@ -260,61 +279,62 @@ helpful even without configuration:
   * Provides user-space tools for working with btrfs. Note that this package is
     basically a necessity because when you generate the initramfs via
     `mkinitcpio`, it will be unable to run the fsck build hook without this.
+* [`man-db` and `man-pages`](https://wiki.archlinux.org/title/Man_page)
+  * The ubiquitous `man` command is the standard way to read documentation on
+    various commands, programs, system calls, etc. Though most of these can be
+    found online nowadays, nothing beats the convenience of having them right
+    in your terminal. The `man-db` package provides the `man` command and
+    `man-pages` provides Linux specific man pages.
 * [`neovim`]
   * Unless you want to use `echo` and `sed`, there is no text editor included,
     so I highly recommend installing one. Obviously you can use whatever text
     editor you like, but `neovim` is a great choice for people who are fans of
     `vim` since it is nearly drop-in compatible but has sensible defaults.
+* [`tmux`]
+  * Having a terminal multiplexer allows you to have a scrollback buffer in the
+    Linux console[^1] which is useful before you get a graphical environment
+    set up. It also lets you open multiple terminals and copy/paste between
+    them.
 * [`fish`]
   * Though chances are you are already familiar with `bash`, `fish` is a nice
-    shell that includes advance features (syntax highlighting, auto-complete)
-    without requiring any configuration. However, you shouldn't replace your
-    login shell with it since it is not POSIX compliant so scripts are likely
-    to break. If you want something you can replace your login shell with and
-    that is closer to `bash`, [`zsh`] is a good choice, but it requires a bit
-    of configuration before it gets to the same level as `fish`.
-* [`tmux`]
-  * Having a terminal multiplexer allows you to actually have a scrollback
-    buffer in the Linux console[^3] which is useful before you get a graphical
-    environment set up. It also lets you open multiple terminals and copy/paste
-    between them.
+    shell that includes advance features (syntax highlighting,
+    auto-complete[^4]) without requiring any configuration. However, you
+    shouldn't replace your login shell with it since it is not POSIX compliant
+    so scripts are likely to break. If you want something closer to `bash`,
+    [`zsh`] is a good choice, but it requires a bit of configuration before it
+    gets to the same level as `fish`.
 
 [`btrfs-progs`]: https://wiki.archlinux.org/title/btrfs#Preparation
 [`neovim`]: https://wiki.archlinux.org/title/Neovim
+[`tmux`]: https://wiki.archlinux.org/title/Tmux
 [`fish`]: https://wiki.archlinux.org/title/fish
 [`zsh`]: https://wiki.archlinux.org/title/zsh
-[`tmux`]: https://wiki.archlinux.org/title/Tmux
-[^3]: You may be thinking that the Linux console already had scrollback capabilities by itself. Don't worry, you're not crazy. [It was removed somewhat recently due to bitrot of the code](https://www.phoronix.com/scan.php?page=news_item&px=Linux-5.9-Drops-Soft-Scrollback). Actually, it's possible by the time you are reading this, it was restored back already.
+[^4]: Note that `fish` usually would parse man pages to generate auto completions for commands it doesn't support out of the box, but that requires installing `python` so consider installing that as well.
 
-Take all these packages and the base packages to the `pacstrap` command and
-then run it.
-
-TODO: figure out if you can mount `@home` earlier.
-
-After all the typical directories are set up in `/mnt`, now you should mount
-the `@home` btrfs subvolume to `/mnt/home`. This way, when you run `genfstab`,
-those mount points will be included.
-
-After you run `genfstab`, you will want to modify the `/etc/fstab` file to
-remove the `subvolid=` mount option. A common way to restore a snapshot is to
-`mv` the `@root` subvolume to `@root_old` and then make a snapshot of the
-snapshot and put the new snapshot at `/@root`. However, if you leave the
-`subvolid=` in, the mounting will fail since the subvolume ID will be
-different.
+Next, you should run `genfstab` as indicated in the installation guide.
+Afterwards, you will want to modify the `/etc/fstab` file to remove the
+`subvolid=` mount option. This way, you can restore from a snapshot by a simple
+`mv` of the `@root` subvolume to `@root_old` and then taking a snapshot of the
+desired snapshot and putting it at `/@root`. If you leave the `subvolid=` in,
+the mounting will fail since the subvolume ID will be different.
 
 After you've run `arch-chroot`, you will now be acting as if you are inside the
-system. You should set up the time zone, hardware clock, locale, keyboard
-layout, and root password.
+system. You should set up the following next:
+
+1. Time zone
+1. Hardware clock
+1. Locale
+1. Keyboard layout
+1. Console font
+1. Root password
 
 ### Networking
 
 For a VM or a simple wired connection, the networking setup is pretty simple.
-The particular details depend on how you've configured the virtual network
-card, but just using the basic [systemd-networkd] should be fine for most
-cases. You will likely also need [systemd-resolved] in order to resolve DNS
-requests.
-
-[systemd-resolved]: https://wiki.archlinux.org/title/Systemd-resolved
+The particular details might vary depending on the network card, but just using
+the basic [systemd-networkd] should be fine for most cases. You will also need
+[systemd-resolved] in order to resolve DNS requests (or an alternative DNS
+resolver if you prefer).
 
 Wireless configuration is more complicated. [NetworkManager] is probably the
 simplest way to get things working since it has a GUI which makes adding new
@@ -327,15 +347,15 @@ to explore other solutions.
 
 Though `pacstrap` already created an initramfs, it won't actually work for us
 since we need to decrypt our root directory partition when we boot. The main
-thing we need to do is update the
-[list of hooks](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_mkinitcpio).
+thing we need to do is update the [list of hooks](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_mkinitcpio).
 Unless you have multiple encrypted drives (or encrypted with a detached LUKS
 header), it should be fine to stick with the `encrypt` hook instead of
 `sd-encrypt`, but you will need to choose the latter if you do need those
-features. `sd-encrypt` will require you to switch out other hooks for the
+features. `sd-encrypt` will require you to switch out other hooks for their
 systemd equivalents.
 
-Don't forget to run `mkinitcpio -P` otherwise your changes won't take effect!
+Don't forget to run `mkinitcpio -P` otherwise your changes won't take effect
+and your system will fail to boot!
 
 ### Boot Loader
 
@@ -347,14 +367,14 @@ need to choose another boot loader.
 
 Be sure to configure things correctly otherwise your system won't boot. For
 systemd-boot in particular, you will need to create a loader entry that will
-load the OS. You will also need to ensure you set the correct kernel parameters
-for
-[decrypting the root directory](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_the_boot_loader)
+load the OS (see `/usr/share/systemd/bootctl/arch.conf` for an example). You
+will also need to ensure you set the correct kernel parameters
+for [decrypting the root directory](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_the_boot_loader)
 and [mounting the correct btrfs subvolume](https://wiki.archlinux.org/title/btrfs#Mounting_subvolume_as_root)
 (use the path `/@root` so it's easy to restore a snapshot). I'd also recommend
 setting the `editor` option to `no` so that people who boot your system cannot
 modify the kernel parameters before logging in (though feel free to do this
-later if you think you'll need to change the flags frequently for initial
+later if you think you'll need to change the parameters frequently for initial
 setup).
 
 Finally, if you are installing this on a real machine, you should install the
@@ -362,18 +382,18 @@ correct [microcode] for your CPU.
 
 [microcode]: https://wiki.archlinux.org/title/Microcode
 
-
 ### Reboot
 
-Congrats! You should now have a functioning Arch Linux system (in theory). At
+Congrats! In theory, you should now have a functioning Arch Linux system. At
 this point, you should exit the chroot. Feel free to try `umount -R /mnt` to
 see if there is still some process busy reading/writing to something (use
-`fuser` to figure out who). Finally, you need to reboot the machine to see if
-your new OS boots up.
+`fuser` to figure out who). Finally, you should reboot the machine to see if
+your new OS boots up (don't forget to remove the installation image).
 
-If things didn't go so well, you should try to investigate what the problem is.
-Double check this guide and the [installation guide] to make sure you followed
-all the steps.
+If things didn't go so well, you'll need to investigate what happened and try
+to fix it. Double check this guide and the [installation guide] to make sure
+you followed all the steps. I also recommend reading through the ArchWiki on
+topics related to the problem.
 
 ## Post-installation
 
