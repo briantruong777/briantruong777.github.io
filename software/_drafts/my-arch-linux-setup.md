@@ -5,9 +5,9 @@ I've been a big fan of [Arch Linux] for a long time now. Though it is a pain to
 set up, it offers a great opportunity to learn exactly how everything fits
 together in a Linux system. There's also that pleasant satisfaction when
 everything is finally set up exactly the way I like it. In the interest of
-making this process easier, I've written down my personal guide to setting up
-Arch Linux. Though this guide does set up Arch as a [VirtualBox] guest, a lot
-of this applies to my other setups as well.
+making this process easier for both myself and others, I've written down my
+personal guide to setting up Arch Linux. Though this guide does set up Arch as
+a [VirtualBox] guest, a lot of this applies to my other setups as well.
 
 [Arch Linux]: https://archlinux.org/
 [VirtualBox]: https://www.virtualbox.org/
@@ -16,6 +16,16 @@ of this applies to my other setups as well.
 {:toc}
 
 ## Overview
+
+This guide is intended to be a companion to the official [installation guide]
+and not a replacement since I don't plan on covering every detail here nor will
+I include the specific commands you need to run. In general, the [ArchWiki] is
+an excellent resource and honestly one of the biggest strengths of Arch Linux
+so feel free to consult it at any point. It's even useful when you aren't
+running Arch.
+
+[installation guide]: https://wiki.archlinux.org/title/Installation_guide
+[ArchWiki]: https://wiki.archlinux.org/
 
 Rather than just going through all the steps, I will focus on explaining the
 rationale behind my decisions. After all, the benefit of Arch is that you get
@@ -40,17 +50,6 @@ functionality. Here are some of the key choices I made:
 [Swap file]: https://wiki.archlinux.org/title/Swap#Swap_file
 [systemd-networkd]: https://wiki.archlinux.org/title/Systemd-networkd
 [systemd-resolved]: https://wiki.archlinux.org/title/Systemd-resolved
-
-
-This guide is intended to be a companion to the [installation guide] and not a
-replacement since I don't plan on covering every detail here nor will I include
-the specific commands you need to run. In general, the [ArchWiki] is an
-excellent resource and honestly one of the strongest strengths of Arch Linux so
-feel free to consult it at any point. It's even useful when you aren't running
-Arch.
-
-[installation guide]: https://wiki.archlinux.org/title/Installation_guide
-[ArchWiki]: https://wiki.archlinux.org/
 
 ## Pre-installation
 
@@ -237,7 +236,7 @@ Subvolumes are prefixed with `@` and normal directories are suffixed with `/`.
 top-level      -> /.btrfs
 ├── @home      -> /home
 ├── @root      -> /
-├── snapshots/
+├── snapshot/
 │   ├── home/
 │   │   ├── @2020-02-20T20:20:20
 │   │   ├── @2021-02-21T21:21:21
@@ -298,16 +297,16 @@ helpful even without configuration:
 * [`fish`]
   * Though chances are you are already familiar with `bash`, `fish` is a nice
     shell that includes advance features (syntax highlighting,
-    auto-complete[^4]) without requiring any configuration. However, you
-    shouldn't replace your login shell with it since it is not POSIX compliant
-    so scripts are likely to break. If you want something closer to `bash`,
-    [`zsh`] is a good choice, but it requires a bit of configuration before it
-    gets to the same level as `fish`.
+    auto-complete[^4]) without requiring any configuration. However, it is not
+    POSIX compliant so scripts that don't have a [shebang] are likely to break.
+    If you want something closer to `bash`, [`zsh`] is a good choice, but it
+    requires a bit of configuration before it gets to the same level as `fish`.
 
 [`btrfs-progs`]: https://wiki.archlinux.org/title/btrfs#Preparation
 [`neovim`]: https://wiki.archlinux.org/title/Neovim
 [`tmux`]: https://wiki.archlinux.org/title/Tmux
 [`fish`]: https://wiki.archlinux.org/title/fish
+[shebang]: https://en.wikipedia.org/wiki/Shebang_(Unix)
 [`zsh`]: https://wiki.archlinux.org/title/zsh
 [^4]: Note that `fish` usually would parse man pages to generate auto completions for commands it doesn't support out of the box, but that requires installing `python` so consider installing that as well.
 
@@ -384,11 +383,11 @@ correct [microcode] for your CPU.
 
 ### Reboot
 
-Congrats! In theory, you should now have a functioning Arch Linux system. At
-this point, you should exit the chroot. Feel free to try `umount -R /mnt` to
-see if there is still some process busy reading/writing to something (use
-`fuser` to figure out who). Finally, you should reboot the machine to see if
-your new OS boots up (don't forget to remove the installation image).
+Assuming nothing went wrong, you should have a functioning Arch Linux system,
+so exit the chroot. Feel free to try `umount -R /mnt` to see if there is still
+some process busy reading/writing to something (use `fuser` to figure out who).
+Finally, you should reboot the machine to see if your new OS boots up (don't
+forget to remove the installation image).
 
 If things didn't go so well, you'll need to investigate what happened and try
 to fix it. Double check this guide and the [installation guide] to make sure
@@ -396,5 +395,147 @@ you followed all the steps. I also recommend reading through the ArchWiki on
 topics related to the problem.
 
 ## Post-installation
+
+At this point, feel free to close this guide and do your own thing. Your system
+can independently boot itself now, and you can install whatever you like via
+`pacman`. However, I would not consider this system to be complete since it
+needs some work until it's usable and secure enough for daily usage. As you may
+have guessed, this is based on the official [general recommendations] page
+which is usually what you would follow after finishing the [installation
+guide].
+
+[general recommendations]: https://wiki.archlinux.org/title/General_recommendations
+
+### Snapshotting with Btrfs
+
+Before we get started, we should go over how to take a snapshot with [btrfs] so
+you can restore things if you screw it up. If you aren't using btrfs, this
+section doesn't apply to you.
+
+Check out `man btrfs-subvolume` which explains the `snapshot` command. You most
+likely want to use the `-r` flag to make the snapshot read-only to avoid
+accidentally modifying it later. Taking a snapshot is very easy:
+
+```
+# cd /.btrfs
+# btrfs subvolume snapshot -r @root snapshot/root/$(date -Iseconds)
+```
+
+Restore from a snapshot by replacing the old subvolume with a new read-write
+snapshot of your chosen snapshot. Since we are mounting our subvolumes by path,
+you need to ensure the path of the restored snapshot is exactly the same. If
+you are replacing the root directory, you should reboot to get the new snapshot
+mounted. For the home directory, you could maybe get away with remounting it
+live, but it's probably safer to just reboot.
+
+After you've confirmed that everything is good, you can delete the old
+subvolume (feel free to keep a snapshot of it). **Do not delete the old root
+directory subvolume while it is still mounted.** If you do so, you will lose
+your entire root directory and be unable to run any programs including the
+`btrfs` command that you would need to fix this.
+
+```
+# cd /.btrfs
+# mv @root @root_old
+# btrfs subvolume snapshot snapshot/root/chosen_snapshot @root
+# reboot
+# btrfs subvolume delete @root_old
+```
+
+Since I always forget all the commands, I usually write a README.md in
+`/.btrfs` describing everything. You could even make a script if you like.
+
+### User Account
+
+Currently the only user is the root user which is not great to use regularly
+since programs you execute will have much greater permissions than they
+probably need. Creating your own user is pretty straightforward using the
+`useradd` command, but before you do that, consider setting up the skeleton
+directory (defaults to `/etc/skel`) since the files in that directory will be
+directly copied to any new user's home directory.
+
+```
+# useradd -m -G wheel <username>
+# passwd <username>
+# chfn <username>
+```
+
+`-m` will create a home directory, and `-G` adds the new user to the specified
+groups. The [`wheel`] group is an administrative group that gets additional
+privileges thanks to [polkit]. `passwd` sets the user's password. `chfn` lets
+you set up some additional [GECOS] metadata which is used by some software.
+
+[`wheel`]: https://wiki.archlinux.org/title/Users_and_groups#User_groups
+[polkit]: https://wiki.archlinux.org/title/Polkit
+[GECOS]: https://en.wikipedia.org/wiki/Gecos_field
+
+#### Sudo
+
+[`sudo`] is a convenient way to run a program with root access without using
+`su` to switch to the root user. This is more secure since you can give higher
+capabilities only to the commands that need it. Though `sudo` can support more
+complicated setups, I find that giving full access to the members of the
+`wheel` group is good enough for systems that have one or just a few users.
+
+[`sudo`]: https://wiki.archlinux.org/title/Sudo
+
+Start by installing the `sudo` package. Next, using `visudo` you can modify the
+config to allow members of the `wheel` group access to `sudo`.
+
+```
+%wheel ALL=(ALL) ALL
+```
+
+I also recommend disabling the password input timeout since it is quite common
+for a long-running script to run `sudo` and fail if you don't happen to be
+around to type in the password. This way, you won't have to restart the entire
+script. Other ways of dealing with this (extending `sudo` timeout or not
+requiring a password) are insecure.
+
+```
+Defaults passwd_timeout=0
+```
+
+#### Polkit
+
+With `sudo` set up, you should be able to do any administrative task that you'd
+need to do, but for commands that are safe to run (e.g. `poweroff` and
+`reboot`), it can be annoying having to type `sudo` and your password every
+time. That's where [polkit] comes in. polkit is a framework for normal users to
+communicate to privileged programs which essentially allows running certain
+privileged commands without `sudo`. Unlike `sudo`, which grants an entire
+process root access, polkit only provides access to specific functionality of
+privileged programs which makes it more secure.
+
+Start by installing `polkit`. Luckily for us, `poweroff` and `reboot` are
+already configured to not require a password if you are physically logged in
+(i.e. no `ssh`) and there are no other users logged in. For other
+actions/rules, [polkit considers members of the `wheel` group to be administrators](https://wiki.archlinux.org/title/Polkit#Administrator_identities),
+so it's best to ensure your administrative accounts are members of `wheel`.
+
+#### Disable Root Login
+
+With both `sudo` and polkit configured, you do not need the root account
+anymore, so you can make your system more secure by disabling root login.
+Before you do so, log in as your new administrative user and ensure `sudo`
+works. Double check [these warnings](https://wiki.archlinux.org/title/Sudo#Disable_root_login)
+don't apply to you, and then run the following:
+
+```
+# passwd -l root
+```
+
+Note that you can still "login" as the root user by doing `sudo -i` to get a
+root shell.
+
+### i3
+
+TODO
+
+### Firewall
+
+TODO
+
+### AUR
 
 TODO
