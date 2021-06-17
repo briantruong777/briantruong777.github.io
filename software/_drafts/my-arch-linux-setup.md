@@ -528,7 +528,74 @@ don't apply to you, and then run the following:
 Note that you can still "login" as the root user by doing `sudo -i` to get a
 root shell.
 
+### pacman
+
+As you've likely figured out by now, `pacman` works just fine out of the box.
+However, there are a few things you'd probably like to set up before you start
+installing more things. First off, here are a few options in the `pacman.conf`
+file you may be interested in:
+
+* `Color`: Enables color output in the terminal.
+* `ParallelDownloads`: Download multiple packages at the same time. The default
+  of 5 is probably fine unless it doesn't fully saturate download speed.
+
+`pacman` also supports [pre/post-transaction hooks](https://wiki.archlinux.org/title/Pacman#Hooks)
+which allow you to run arbitrary commands before/after `pacman` does anything.
+This allows you to take a btrfs snapshot right before you install anything
+which makes it easy to revert a bad upgrade. Check out `man alpm-hooks` for
+details on the syntax of the hook files. If you don't feel like doing all this
+manually, consider using [Snapper] and follow [these instructions](https://wiki.archlinux.org/title/Snapper#Wrapping_pacman_transactions_in_snapshots).
+
+[Snapper]: https://wiki.archlinux.org/title/Snapper
+
+#### Reflector
+
+[Reflector] is a tool that can update the `pacman` mirror list with the best
+mirrors based on how up-to-date they are and their speed. Though the default
+`/etc/pacman.d/mirrorlist` file may work okay, it will likely not be optimal
+for your current location.
+
+[Reflector]: https://wiki.archlinux.org/title/Reflector
+
+After you install the `reflector` package, update the
+`/etc/xdg/reflector/reflector.conf` to have the parameters you desire. I
+personally would recommend setting these options:
+
+* `--protocol https`: The HTTP protocols are generally faster since the
+  connection can be reused for multiple downloads. I go with HTTPS for the
+  additional security (probably not necessary since packages are signed, but it
+  doesn't hurt to be cautious).
+* `--country US`: Only consider mirrors in your country since they are likely
+  to be close (use `--list-countries` to see the list of countries).
+* `--latest 10`: Find the 10 most up-to-date mirrors. Any mirror that is
+  up-to-date enough is acceptable, but might as well pick the latest 10. I
+  prefer this over `--score` since the score also includes the RTT from the
+  Arch Linux servers to the mirror which isn't very useful since your computer
+  likely isn't in the same location.
+* `--sort rate`: Amongst the selected mirrors, sort them by their speed so
+  you'll use the fastest mirror first for downloading packages.
+
+Alternatively you could use `--fastest`, `--age`, and `--sort age` instead of
+`--latest` and `--sort rate`. This essentially prioritizes speed over being
+up-to-date, but if you pick a low enough `--age`, the result will be similar.
+
+Once the config file is set up, you can start the systemd service
+`reflector.service` to update your mirrors. You can take a look at the updated
+`/etc/pacmand.d/mirrorlist` file to confirm it worked. Note that you could
+enable this service to have it run on every boot, but if you really want to
+update your mirrors regularly, I would recommend enabling the systemd timer
+(`reflector.timer`) instead since you really don't need to update your mirrors
+that often.
+
+### AUR
+
+TODO
+
 ### i3
+
+TODO
+
+### swap
 
 TODO
 
@@ -536,6 +603,10 @@ TODO
 
 TODO
 
-### AUR
+### NTP
+
+TODO
+
+### ssh
 
 TODO
