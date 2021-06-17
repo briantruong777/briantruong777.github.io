@@ -74,8 +74,8 @@ to worry too much about it.
 Set up the VM to boot from the installation image and then boot it. This will
 bring you into a live installation of Arch Linux that you will use to set up
 your actual installation. Note that you may want to do everything inside
-[`tmux`] so you can scrollback to previous output[^1] and copy/paste between
-multiple terminals.
+[`tmux`] so you can scrollback to previous output[^console] and copy/paste
+between multiple terminals.
 
 Start off with the first basic steps of:
 1. Set the keyboard layout if needed.
@@ -85,7 +85,7 @@ Start off with the first basic steps of:
 1. Confirm you have internet access.
 1. Enable NTP for the system clock.
 
-[^1]: You may be thinking that the Linux console previously had scrollback capabilities by itself. Don't worry, you're not crazy. [It was removed somewhat recently due to bit rot of the code](https://www.phoronix.com/scan.php?page=news_item&px=Linux-5.9-Drops-Soft-Scrollback). Actually, it's possible by the time you are reading this, it was restored back already in which case maybe `tmux` will be less useful.
+[^console]: You may be thinking that the Linux console previously had scrollback capabilities by itself. Don't worry, you're not crazy. [It was removed somewhat recently due to bit rot of the code](https://www.phoronix.com/scan.php?page=news_item&px=Linux-5.9-Drops-Soft-Scrollback). Actually, it's possible by the time you are reading this, it was restored back already in which case maybe `tmux` will be less useful.
 [`terminus-font`]: https://archlinux.org/packages/community/any/terminus-font/
 
 ### Disk Partitioning
@@ -96,7 +96,7 @@ are a few things to keep in mind.
 
 First, using [GPT] is recommended over [MBR] for booting in UEFI mode since it
 is more flexible and better supported by motherboards and operating systems
-implementing UEFI[^2]. Second, UEFI requires an [EFI system partition] since
+implementing UEFI[^mbr]. Second, UEFI requires an [EFI system partition] since
 that is where UEFI will look for boot loaders to run. Given that we are trying
 to keep it simple, we will only have 2 partitions:
 
@@ -105,7 +105,7 @@ to keep it simple, we will only have 2 partitions:
 
 [GPT]: https://en.wikipedia.org/wiki/GUID_Partition_Table
 [MBR]: https://en.wikipedia.org/wiki/Master_boot_record
-[^2]: The ArchWiki's entry on [partitioning](https://wiki.archlinux.org/title/Partitioning#Choosing_between_GPT_and_MBR) describes these reasons in more detail, but in general, there's little reason to use MBR unless you are stuck with legacy hardware.
+[^mbr]: The ArchWiki's entry on [partitioning](https://wiki.archlinux.org/title/Partitioning#Choosing_between_GPT_and_MBR) describes these reasons in more detail, but in general, there's little reason to use MBR unless you are stuck with legacy hardware.
 [EFI system partition]: https://en.wikipedia.org/wiki/EFI_system_partition
 
 We will not need a swap partition because we will be using a [swap file]
@@ -121,15 +121,15 @@ Though the OS can be in a separate partition, we will keep the kernel image in
 the EFI system partition since we will not be encrypting our kernel image. In
 theory, encrypting the kernel will prevent an attacker from modifying the
 kernel, but in reality this won't stop them since they can just modify the boot
-loader instead[^3]. With this in mind, the EFI system partition is a convenient
-alternative, but we could've created another partition just for the kernel.
-Note that if you are installing Arch on a system that already has an EFI system
-partition, [the existing partition may be too small](https://wiki.archlinux.org/title/Dual_boot_with_Windows#The_EFI_system_partition_created_by_Windows_Setup_is_too_small)
+loader instead[^maid]. With this in mind, the EFI system partition is a
+convenient alternative, but we could've created another partition just for the
+kernel. Note that if you are installing Arch on a system that already has an
+EFI system partition, [the existing partition may be too small](https://wiki.archlinux.org/title/Dual_boot_with_Windows#The_EFI_system_partition_created_by_Windows_Setup_is_too_small)
 and you may be forced to put the kernel on a separate partition. Either you'll
 need to use [systemd-boot's XBOOTLDR](https://wiki.archlinux.org/title/Systemd-boot#Installation_using_XBOOTLDR)
 or use a different boot loader.
 
-[^3]: This attack vector is known as the [Evil Maid Attack]. The correct way to prevent this is to use [Secure Boot], but in my opinion, that is overkill unless you worried about an intelligence agency coming for you.
+[^maid]: This attack vector is known as the [Evil Maid Attack]. The correct way to prevent this is to use [Secure Boot], but in my opinion, that is overkill unless you worried about an intelligence agency coming for you.
 [Evil Maid Attack]: https://www.schneier.com/blog/archives/2009/10/evil_maid_attac.html
 [Secure Boot]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot
 
@@ -291,16 +291,17 @@ helpful even without configuration:
     `vim` since it is nearly drop-in compatible but has sensible defaults.
 * [`tmux`]
   * Having a terminal multiplexer allows you to have a scrollback buffer in the
-    Linux console[^1] which is useful before you get a graphical environment
-    set up. It also lets you open multiple terminals and copy/paste between
-    them.
+    Linux console[^console] which is useful before you get a graphical
+    environment set up. It also lets you open multiple terminals and copy/paste
+    between them.
 * [`fish`]
   * Though chances are you are already familiar with `bash`, `fish` is a nice
     shell that includes advance features (syntax highlighting,
-    auto-complete[^4]) without requiring any configuration. However, it is not
-    POSIX compliant so scripts that don't have a [shebang] are likely to break.
-    If you want something closer to `bash`, [`zsh`] is a good choice, but it
-    requires a bit of configuration before it gets to the same level as `fish`.
+    auto-complete[^fish]) without requiring any configuration. However, it is
+    not POSIX compliant so scripts that don't have a [shebang] are likely to
+    break. If you want something closer to `bash`, [`zsh`] is a good choice,
+    but it requires a bit of configuration before it gets to the same level as
+    `fish`.
 
 [`btrfs-progs`]: https://wiki.archlinux.org/title/btrfs#Preparation
 [`neovim`]: https://wiki.archlinux.org/title/Neovim
@@ -308,7 +309,7 @@ helpful even without configuration:
 [`fish`]: https://wiki.archlinux.org/title/fish
 [shebang]: https://en.wikipedia.org/wiki/Shebang_(Unix)
 [`zsh`]: https://wiki.archlinux.org/title/zsh
-[^4]: Note that `fish` usually would parse man pages to generate auto completions for commands it doesn't support out of the box, but that requires installing `python` so consider installing that as well.
+[^fish]: Note that `fish` usually would parse man pages to generate auto completions for commands it doesn't support out of the box, but that requires installing `python` so consider installing that as well.
 
 Next, you should run `genfstab` as indicated in the installation guide.
 Afterwards, you will want to modify the `/etc/fstab` file to remove the
@@ -610,3 +611,33 @@ TODO
 ### ssh
 
 TODO
+
+## Regular Maintenance
+
+Congratulations! Your Arch Linux system is fully set up and ready for use. If
+you are new to Arch, you should read through the [system maintenance] guide. To
+sum it up, you need to keep your system up-to-date on a regular basis with
+these steps:
+
+1. Check <https://archlinux.org/> for any required manual intervention
+1. Run `pacman -Syu`
+1. Deal with any `pacnew` or `pacsave` files
+1. Reboot
+
+[system maintenance]: https://wiki.archlinux.org/title/System_maintenance
+
+Don't put this off since having to deal with multiple changes requiring manual
+intervention can be a pain and puts your system at risk of being permanently
+broken. Also, only do an upgrade when you can accept your system being broken
+for some time (e.g. don't upgrade right before an important presentation).
+
+## Conclusion
+
+Hopefully you got what you needed out of this guide. Though Arch can be a pain
+to set up, many Arch users enjoy having a system that they "built"
+themselves[^built]. Whether you decide to join them or not, hopefully you found
+this experience valuable.
+
+[^built]: Actually, if you want the real "build-it-yourself" experience, you should consider trying out [Gentoo] or [LFS] (Linux From Scratch). I personally have not tried either of them, but my initial impressions are that they aren't worth the hassle. They do offer more customizability than Arch since they require you to compile everything from source, but that doesn't seem that useful unless you are trying to micro-optimize for your hardware, using an unusual CPU architecture, or want to experience truly building a Linux system yourself.
+[Gentoo]: https://www.gentoo.org/
+[LFS]: https://www.linuxfromscratch.org/
