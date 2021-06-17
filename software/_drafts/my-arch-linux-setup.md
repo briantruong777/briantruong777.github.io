@@ -39,7 +39,6 @@ functionality. Here are some of the key choices I made:
 | File system          | [btrfs]                                   |
 | Window manager       | [i3]                                      |
 | Swap                 | [Swap file]                               |
-| Hibernation          | Not supported                             |
 | Networking           | [systemd-networkd] and [systemd-resolved] |
 | Firewall             | TODO                                      |
 
@@ -588,15 +587,45 @@ update your mirrors regularly, I would recommend enabling the systemd timer
 (`reflector.timer`) instead since you really don't need to update your mirrors
 that often.
 
-### AUR
+### Swap
 
-TODO
+Though you can probably get pretty far without any [swap] (especially if you
+have tons of memory), it's best to have some just in case you exhaust all your
+RAM. Otherwise, programs will get killed by the kernel and you'll be at higher
+risk of locking up your entire system. Also, if you wish to set up
+[hibernation], you'll need swap space at least as large as your RAM otherwise
+hibernation might fail sometimes if there is too much RAM to save.
+
+[swap]: https://wiki.archlinux.org/title/Swap
+[hibernation]: https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate#Hibernation
+
+I'd recommend setting up a [swap file] since it is way more convenient than a
+swap partition (plus it'll be annoying to make space for a new partition now
+that we've installed everything). Note that if you are using btrfs, you'll need
+to follow [these instructions](https://wiki.archlinux.org/title/Btrfs#Swap_file)
+and use the separate `@swap` subvolume to ensure it'll work correctly. Here's
+the commands to set up the swap file in btrfs.
+
+```
+# cd /swap
+# touch swapfile
+# chattr -m swapfile
+# chattr +C swapfile
+# btrfs property set swapfile compression none
+```
+
+Note that the `chattr -m` command shouldn't be necessary since it removes the
+flag that disables compression and we want compression disabled, but it seems
+you will get an "Invalid argument" error from `chattr +C` if you don't remove
+it first (likely a bug).
+
+With the empty swap file created, you need to decide how big you want it.
+Usually you'd match the amount of RAM just in case you do decide to set up
+hibernation, but for a VM with limited disk space, that might be too much
+space. I'd stick with just a few GiB (maybe even just 1 GiB). Feel free to make
+it larger since it's pretty easy to change the size later.
 
 ### i3
-
-TODO
-
-### swap
 
 TODO
 
@@ -604,11 +633,11 @@ TODO
 
 TODO
 
-### NTP
+### ssh
 
 TODO
 
-### ssh
+### AUR
 
 TODO
 
