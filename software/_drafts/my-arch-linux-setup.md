@@ -70,6 +70,38 @@ you start installing a lot of larger packages (LaTeX, fonts, etc.) and that's
 not even including your own files. I personally go with 32 GB so I don't need
 to worry too much about it.
 
+Finally, here are some less important options that I like to set.
+
+* Enable the shared clipboard. This won't actually work until we install the
+  [VirtualBox Guest Additions], but feel free to enable it early so we don't
+  forget.
+* Set the amount of memory. Make sure not to exceed what your host system has
+  available.
+* Set the boot order. Chances are that the default is perfectly fine, but I
+  usually remove everything except the optical drive and the hard disk, and
+  then rearrange the optical drive to come first.
+* Set the number of processors. You can set this to match the number of cores
+  your computer has since the host and guest machine can share all the cores
+  safely.
+* Enable PAE/NX. This will enable [Physical Address Extension] which includes
+  support for the no-execute bit which can provide additional security by
+  preventing execution of code in data-only memory pages. I'm not actually sure
+  enabling this alone is enough, but might as well do so.
+* Set video memory to the maximum (128 MB). This is already a relatively small
+  amount and will likely not be enough for graphics heavy workloads.
+* Enable 3D acceleration. This will allow usage of your host system's graphics
+  card and will improve performance of programs that can take advantage of that
+  (e.g. web browsers).
+* If you are storing the VM's hard drive on an SSD, mark the SSD attribute for
+  the disk. This will tell the guest system that it is on an SSD so it can
+  change it's behavior to take advantage of that.
+* Disable showing the mini toolbar in full-screen mode. This is just my
+  personal taste, but I prefer not having any VirtualBox UI when in full-screen
+  mode.
+
+[VirtualBox Guest Additions]: https://wiki.archlinux.org/title/VirtualBox/Install_Arch_Linux_as_a_guest#Install_the_Guest_Additions
+[Physical Address Extension]: https://en.wikipedia.org/wiki/Physical_Address_Extension
+
 Set up the VM to boot from the installation image and then boot it. This will
 bring you into a live installation of Arch Linux that you will use to set up
 your actual installation. Note that you may want to do everything inside
