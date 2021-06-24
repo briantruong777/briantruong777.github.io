@@ -34,7 +34,7 @@ Note that this guide is aimed at a virtual machine setup so I've purposefully
 gone with a simpler setup since a VM usually doesn't need as much
 functionality. Here are some of the key choices I made:
 
-| Boot loader          | [systemd-boot]                            |
+| Boot loader          | [GRUB]                                    |
 | Full disk encryption | [dm-crypt]                                |
 | File system          | [btrfs]                                   |
 | Window manager       | [i3]                                      |
@@ -42,7 +42,7 @@ functionality. Here are some of the key choices I made:
 | Networking           | [systemd-networkd] and [systemd-resolved] |
 | Firewall             | TODO                                      |
 
-[systemd-boot]: https://wiki.archlinux.org/title/Systemd-boot
+[GRUB]: https://wiki.archlinux.org/title/GRUB
 [dm-crypt]: https://wiki.archlinux.org/title/Dm-crypt
 [btrfs]: https://wiki.archlinux.org/title/btrfs
 [i3]: https://wiki.archlinux.org/title/i3
@@ -58,8 +58,8 @@ there are a few recommendations I would make.
 
 First, enable EFI mode. Though it's perfectly fine to stick to BIOS mode, most
 modern computers are using UEFI, so you might as well get used to it. If you do
-decide to stick with BIOS mode, you'll need to choose a different boot loader
-than [systemd-boot] since it only supports UEFI.
+decide to stick with BIOS mode, be sure you choose a boot loader that supports
+it since some newer boot loaders only support UEFI.
 
 Second, for VMs I recommend choosing the disk size wisely. Though it's possible
 to resize things later (or add more drives if you use [btrfs]), it's more
@@ -148,17 +148,17 @@ On a VM, increasing the disk's size isn't that hard, but on a real machine,
 adding another disk is a much simpler option than trying to copy everything on
 the smaller disk onto a larger disk.
 
-Though the OS can be in a separate partition, we will keep the kernel image in
-the EFI system partition since we will not be encrypting our kernel image. In
-theory, encrypting the kernel will prevent an attacker from modifying the
-kernel, but in reality this won't stop them since they can just modify the boot
-loader instead[^maid]. With this in mind, the EFI system partition is a
-convenient alternative, but we could've created another partition just for the
-kernel. Note that if you are installing Arch on a system that already has an
-EFI system partition, [the existing partition may be too small](https://wiki.archlinux.org/title/Dual_boot_with_Windows#The_EFI_system_partition_created_by_Windows_Setup_is_too_small)
-and you may be forced to put the kernel on a separate partition. Either you'll
-need to use [systemd-boot's XBOOTLDR](https://wiki.archlinux.org/title/Systemd-boot#Installation_using_XBOOTLDR)
-or use a different boot loader.
+Note that we will be keeping our kernel and initramfs (aka the `/boot`
+directory) in the encrypted root directory partition so that when we take a
+btrfs snapshot, it will encompass the entire system including the kernel. This
+is important because usually kernel modules are not installed under `/boot`, so
+if we kept the kernel in a separate partition, it would not be snapshotted and
+restored in sync with the kernel modules which will break things.
+
+As a side effect, this will also keep our kernel encrypted which will stop an
+attacker from directly modifying the kernel. However, this won't stop a
+particularly determined attacker since they can modify the boot loader instead
+which will give them access to your system after you decrypt it[^maid].
 
 [^maid]: This attack vector is known as the [Evil Maid Attack]. The correct way to prevent this is to use [Secure Boot], but in my opinion, that is overkill unless you worried about an intelligence agency coming for you.
 [Evil Maid Attack]: https://www.schneier.com/blog/archives/2009/10/evil_maid_attac.html
@@ -180,13 +180,14 @@ every time you boot the system. For convenience, I usually make the encryption
 password the same as my login password which is secure enough for me (note that
 by default nothing will keep the passwords in sync).
 
-Following [these instructions](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#LUKS_on_a_partition),
-you should first encrypt the partition via the `cryptsetup` command and set it
-up to be mounted at `/dev/mapper/cryptroot`. At this point,
-`/dev/mapper/cryptroot` represents the unencrypted drive so anything you write
-there will be encrypted. Now, there are still more steps necessary to set up
-automatic decryption of the partition at boot time, but we will get to that
-later when we set up [initramfs](#initramfs).
+Now the complicated part. Basically, you want to follow [these instructions](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Encrypted_boot_partition_(GRUB))
+when you encrypt the root partition to ensure [GRUB] can decrypt it. However,
+those instructions also include setting up LVM when we just want to set up a
+simple partition encryption like in [these instructions](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#LUKS_on_a_partition).
+You'll need to follow some mixture of the two, so be sure to read both
+instructions fully before taking any steps. Note that the last steps of the
+instructions involve setting up your initramfs and GRUB which we will do later
+in this guide so hold onto those steps.
 
 ### Format Partitions
 
@@ -201,39 +202,43 @@ otherwise you will destroy the encryption. In this guide, we will be using
 Now before we get any further, I know that btrfs has a pretty bad reputation
 for losing data which is pretty much the worst possible thing a file system
 could do. This is especially ironic since it is a [copy-on-write] file system
-which is traditionally considered to be safer from corruptions since they
+which are traditionally considered to be safer from corruptions since they
 easily support atomic operations due to simply never overwriting previous
-data/metadata. I believe most of these fears were due to people using btrfs
+data/metadata. I believe most of these stories were from people using btrfs
 with a RAID5/6 setup [which even now isn't supported by btrfs](https://btrfs.wiki.kernel.org/index.php/RAID56).
 Anyway, I don't have much experience with btrfs, but it has a lot of nice
 features and enough people saying good things about it (it's now the
 [default for Fedora](https://fedoraproject.org/wiki/Changes/BtrfsByDefault))
 for me to justify using it. Still, if its reputation scares you off, feel free
-to use a different file system.
+to use a different file system (e.g. [ZFS] is another CoW file system that is
+largely considered to be better in every way).
 
 [copy-on-write]: https://en.wikipedia.org/wiki/Copy-on-write
+[ZFS]: https://wiki.archlinux.org/title/ZFS
 
 ### Mounting Filesystems
 
 Next, we need to decide how our newly formatted partitions will be mounted. If
 you didn't choose to use [btrfs], the straightforward scheme is to just mount
 your new root directory at `/mnt` and then mount the EFI system partition at
-`/mnt/boot` (if you don't want to put your kernel image in the EFI system
-partition, then do `/mnt/efi` instead). However, with btrfs, we have some
-additional options to consider.
+`/mnt/efi` (or at `/mnt/boot` if you want to put your kernel image in the EFI
+system partition). However, with btrfs, we have some additional options to
+consider.
 
 First, you should decide whether to mount the btrfs directory with
 [compression](https://btrfs.wiki.kernel.org/index.php/Compression)
 enabled. I don't have any hard data on this, but for a hard drive, enabling
 compression is pretty much a no-brainer since disk IO is slow enough to make it
-worth the CPU cost to reduce it. For SSDs though, it's probably a perfomance
+worth the CPU cost to reduce it. For SSDs though, it's probably a performance
 hit most of the time. Still, if disk space is more important to you, the
-[perfomance penalty](https://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git/commit/?h=next&id=5c1aab1dd5445ed8bdcdbb575abc1b0d7ee5b2e7)
-is likely worth it (e.g. our VM with only 32 GB of space). If perfomance is
+[performance penalty](https://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git/commit/?h=next&id=5c1aab1dd5445ed8bdcdbb575abc1b0d7ee5b2e7)
+is likely worth it (e.g. our VM with only 32 GB of space). If performance is
 more important, you could choose the LZO algorithm since it is the fastest, but
 at that point, you should probably just not enable compression at all. If you
 do decide to enable compression, you should mount with the option
-`compress=zstd` since the ZSTD algorithm seems better than the default ZLIB.
+`compress=zstd:1` since the ZSTD algorithm seems better than the default ZLIB,
+and level 1 already provides significant compression so more isn't worth the
+additional overhead.
 
 Next, you should mount with the [`noatime`] option. In general, this is a
 useful optimization for any file system when you don't need access times for
@@ -287,15 +292,16 @@ storing a [swap file] since it requires that the containing subvolume is not
 snapshotted or compressed.
 
 To actually create this layout, you should first mount the btrfs top-level
-somewhere (e.g. `/btrfs`) so you can `cd` in and start creating the subvolume
-and directory structure. To continue with the rest of the installation, you
-should mount everything:
+somewhere so you can `cd` in and start creating the subvolume and directory
+structure. To continue with the rest of the installation, you should mount
+everything we've set up:
 
 * `@root` subvolume at `/mnt`
 * `@home` subvolume at `/mnt/home`
-* EFI system partition at `/mnt/boot`
+* EFI system partition at `/mnt/efi`
 * btrfs top-level subvolume at `/mnt/.btrfs`
-* `@swap` subvolume at `/mnt/swap` (don't forget to disable compression)
+* `@swap` subvolume at `/mnt/swap` (we do need to disable compression for that
+  subvolume, but doing it via mount options [probably won't work](https://btrfs.wiki.kernel.org/index.php/Compression#Can_I_set_compression_per-subvolume.3F))
 
 ## Installation
 
@@ -385,28 +391,34 @@ header), it should be fine to stick with the `encrypt` hook instead of
 features. `sd-encrypt` will require you to switch out other hooks for their
 systemd equivalents.
 
-Don't forget to run `mkinitcpio -P` otherwise your changes won't take effect
-and your system will fail to boot!
+I'd also highly recommend including a key file in the initramfs so it can
+unlock the root partition without you having to type in the password again. Be
+sure to keep the key file secure and the initramfs (including the fallback one)
+secure by setting the permissions so only the root user can read them.
+
+Don't forget to run `mkinitcpio -P` otherwise your system will still use the
+old initramfs and your changes won't take effect likely causing your system to
+fail to boot!
 
 ### Boot Loader
 
 The last thing we need to do before we can boot into our system is set up a
-boot loader. There are multiple boot loaders you can choose from, but we will
-use [systemd-boot] since it is already included and quite simple. Note that it
-only supports UEFI and not BIOS so if you are operating in BIOS mode, you will
-need to choose another boot loader.
+boot loader. Usually we'd have multiple choices here, but since we need a
+bootloader that can both decrypt a LUKS partition and read files stored on
+btrfs, [GRUB] is our only option.
 
-Be sure to configure things correctly otherwise your system won't boot. For
-systemd-boot in particular, you will need to create a loader entry that will
-load the OS (see `/usr/share/systemd/bootctl/arch.conf` for an example). You
-will also need to ensure you set the correct kernel parameters
-for [decrypting the root directory](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_the_boot_loader)
-and [mounting the correct btrfs subvolume](https://wiki.archlinux.org/title/btrfs#Mounting_subvolume_as_root)
-(use the path `/@root` so it's easy to restore a snapshot). I'd also recommend
-setting the `editor` option to `no` so that people who boot your system cannot
-modify the kernel parameters before logging in (though feel free to do this
-later if you think you'll need to change the parameters frequently for initial
-setup).
+Be sure to configure things correctly otherwise your system won't boot. The
+instructions for GRUB are quite complicated. At a high level, you need to do
+the following:
+
+1. Enable `GRUB_ENABLE_CRYPTODISK=y`
+1. Run `grub-install`
+1. Configure `/etc/default/grub`
+1. Run `grub-mkconfig`
+
+Be sure to double check the resulting `/boot/grub/grub.cfg` file to confirm it
+sets the right kernel parameters for [decrypting the root directory](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_the_boot_loader)
+and [mounting the correct btrfs subvolume](https://wiki.archlinux.org/title/btrfs#Mounting_subvolume_as_root).
 
 Finally, if you are installing this on a real machine, you should install the
 correct [microcode] for your CPU.
@@ -419,7 +431,8 @@ Assuming nothing went wrong, you should have a functioning Arch Linux system,
 so exit the chroot. Feel free to try `umount -R /mnt` to see if there is still
 some process busy reading/writing to something (use `fuser` to figure out who).
 Finally, you should reboot the machine to see if your new OS boots up (don't
-forget to remove the installation image).
+forget to remove the installation image and consider changing the boot order to
+try the hard disk first).
 
 If things didn't go so well, you'll need to investigate what happened and try
 to fix it. Double check this guide and the [installation guide] to make sure
@@ -541,7 +554,7 @@ privileged programs which makes it more secure.
 
 Start by installing `polkit`. Luckily for us, `poweroff` and `reboot` are
 already configured to not require a password if you are physically logged in
-(i.e. no `ssh`) and there are no other users logged in. For other
+(e.g. not `ssh`) and there are no other users logged in. For other
 actions/rules, [polkit considers members of the `wheel` group to be administrators](https://wiki.archlinux.org/title/Polkit#Administrator_identities),
 so it's best to ensure your administrative accounts are members of `wheel`.
 
@@ -569,14 +582,16 @@ file you may be interested in:
 
 * `Color`: Enables color output in the terminal.
 * `ParallelDownloads`: Download multiple packages at the same time. The default
-  of 5 is probably fine unless it doesn't fully saturate download speed.
+  of 5 is probably fine unless it isn't enough to fully saturate your download
+  bandwidth.
 
-`pacman` also supports [pre/post-transaction hooks](https://wiki.archlinux.org/title/Pacman#Hooks)
-which allow you to run arbitrary commands before/after `pacman` does anything.
-This allows you to take a btrfs snapshot right before you install anything
-which makes it easy to revert a bad upgrade. Check out `man alpm-hooks` for
-details on the syntax of the hook files. If you don't feel like doing all this
-manually, consider using [Snapper] and follow [these instructions](https://wiki.archlinux.org/title/Snapper#Wrapping_pacman_transactions_in_snapshots).
+`pacman` also supports [pre/post-transaction
+hooks](https://wiki.archlinux.org/title/Pacman#Hooks) which allow you to run
+arbitrary commands before/after `pacman` does anything. You could create a hook
+to take a btrfs snapshot right before anything gets installed which makes it
+easy to revert a bad upgrade. Check out `man alpm-hooks` for details on the
+syntax of the hook files. If you don't feel like doing all this manually,
+consider using [Snapper] and follow [these instructions](https://wiki.archlinux.org/title/Snapper#Wrapping_pacman_transactions_in_snapshots).
 
 [Snapper]: https://wiki.archlinux.org/title/Snapper
 
@@ -584,8 +599,9 @@ manually, consider using [Snapper] and follow [these instructions](https://wiki.
 
 [Reflector] is a tool that can update the `pacman` mirror list with the best
 mirrors based on how up-to-date they are and their speed. Though the default
-`/etc/pacman.d/mirrorlist` file may work okay, it will likely not be optimal
-for your current location.
+`/etc/pacman.d/mirrorlist` file should work pretty well since [it was already generated via Reflector](https://wiki.archlinux.org/title/Installation_guide#Select_the_mirrors),
+mirrors do change over time and it's convenient to set it up while you still
+have the context.
 
 [Reflector]: https://wiki.archlinux.org/title/Reflector
 
@@ -599,8 +615,8 @@ personally would recommend setting these options:
   doesn't hurt to be cautious).
 * `--country US`: Only consider mirrors in your country since they are likely
   to be close (use `--list-countries` to see the list of countries).
-* `--latest 10`: Find the 10 most up-to-date mirrors. Any mirror that is
-  up-to-date enough is acceptable, but might as well pick the latest 10. I
+* `--latest 25`: Find the 25 most up-to-date mirrors. Any mirror that is
+  up-to-date enough is acceptable, but might as well pick the latest 25. I
   prefer this over `--score` since the score also includes the RTT from the
   Arch Linux servers to the mirror which isn't very useful since your computer
   likely isn't in the same location.
@@ -665,13 +681,15 @@ TODO
 
 TODO
 
-### ssh
+### VirtualBox Guest Additions
 
 TODO
 
 ### AUR
 
 TODO
+
+### Backup Kernel
 
 ## Regular Maintenance
 
