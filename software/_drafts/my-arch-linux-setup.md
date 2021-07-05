@@ -573,7 +573,7 @@ don't apply to you, and then run the following:
 Note that you can still "login" as the root user by doing `sudo -i` to get a
 root shell.
 
-### pacman
+### Pacman
 
 As you've likely figured out by now, `pacman` works just fine out of the box.
 However, there are a few things you'd probably like to set up before you start
@@ -585,13 +585,14 @@ file you may be interested in:
   of 5 is probably fine unless it isn't enough to fully saturate your download
   bandwidth.
 
-`pacman` also supports [pre/post-transaction
-hooks](https://wiki.archlinux.org/title/Pacman#Hooks) which allow you to run
-arbitrary commands before/after `pacman` does anything. You could create a hook
-to take a btrfs snapshot right before anything gets installed which makes it
-easy to revert a bad upgrade. Check out `man alpm-hooks` for details on the
-syntax of the hook files. If you don't feel like doing all this manually,
-consider using [Snapper] and follow [these instructions](https://wiki.archlinux.org/title/Snapper#Wrapping_pacman_transactions_in_snapshots).
+`pacman` also supports [pre/post-transaction hooks](https://wiki.archlinux.org/title/Pacman#Hooks)
+which allow you to run arbitrary commands before/after `pacman` does anything.
+You could create a hook to take a btrfs snapshot right before anything happens
+(be sure to give it an alphabetically early name to ensure this) which makes it
+easy to revert a bad upgrade, though note that it might be a finnicky since the
+snapshot will likely include `pacman`'s lock file. Check out `man alpm-hooks`
+for details on the syntax of the hook files. If you don't feel like doing all
+this manually, consider using [Snapper] and follow [these instructions](https://wiki.archlinux.org/title/Snapper#Wrapping_pacman_transactions_in_snapshots).
 
 [Snapper]: https://wiki.archlinux.org/title/Snapper
 
