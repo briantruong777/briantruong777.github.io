@@ -636,6 +636,36 @@ update your mirrors regularly, I would recommend enabling the systemd timer
 (`reflector.timer`) instead since you really don't need to update your mirrors
 that often.
 
+### AUR
+
+The [Arch User Repository] is a repository of PKGBUILD scripts that is
+maintained by various Arch Linux users. Unlike with packages that come from the
+[official repositories], these PKGBUILD scripts are not maintained by trusted
+package maintainers meaning you *cannot* blindly trust anything from the AUR.
+Despite this, the AUR is still very useful for packages that are not popular
+enough to be in the official repositories, so there are many users who
+regularly use packages built from the AUR. To this end, there are many [AUR
+helpers] that can make installing packages from the AUR convenient since
+usually you'd need to manually download the PKGBUILD file and any dependencies
+it needs, build the package, and then install the package. Doing this once in a
+while isn't a big deal, but having to do it every time the package updates is a
+pain.
+
+[Arch User Repository]: https://wiki.archlinux.org/title/Arch_User_Repository
+[official repositories]: https://wiki.archlinux.org/title/Official_repositories
+[AUR helpers]: https://wiki.archlinux.org/title/AUR_helpers
+
+Of course, AUR helpers are not in the official repositories either, so to
+install one, you'll have to manually build it. Follow [these instructions](https://wiki.archlinux.org/title/Arch_User_Repository#Installing_and_upgrading_packages)
+carefully to install your AUR helper of choice. There are many to choose from,
+but nowadays I usually use [`yay`] or [`paru`]. Note that even if you use an
+AUR helper, you should always strive to check the PKGBUILD and other files to
+ensure there isn't anything suspicious. Any decent AUR helper will make it
+easier by showing you the diff every time the package updates.
+
+[`yay`]: https://github.com/Jguer/yay
+[`paru`]: https://github.com/morganamilo/paru
+
 ### Swap
 
 Though you can probably get pretty far without any [swap] (especially if you
@@ -683,10 +713,6 @@ TODO
 TODO
 
 ### VirtualBox Guest Additions
-
-TODO
-
-### AUR
 
 TODO
 
