@@ -716,13 +716,224 @@ login into the desktop.
 
 ### Window Manager
 
+Assuming you don't want to stay in the Linux Console all the time, you'll want
+to install a [desktop environment] or [window manager]. Long story short, if
+you just want a standard graphical desktop experience that can be configured
+via a GUI and comes with some basic applications, then just install a desktop
+environment.
+
+* [GNOME]
+* [KDE Plasma]
+* [Cinnamon]
+* [Xfce]
+
+[desktop environment]: https://wiki.archlinux.org/title/Desktop_environment
+[window manager]: https://wiki.archlinux.org/title/Window_manager
+[Cinnamon]: https://wiki.archlinux.org/title/Cinnamon
+[GNOME]: https://wiki.archlinux.org/title/GNOME
+[KDE Plasma]: https://wiki.archlinux.org/title/KDE
+[Xfce]: https://wiki.archlinux.org/title/Xfce
+
+Of course, there are more than just these 4, but these are the ones that I've
+tried and are relatively popular. My personal choice would be Xfce since it is
+lightweight and not too ugly.
+
+However, nowadays I use [i3] instead since I find its window tiling scheme
+makes a lot of sense and it still supports floating windows. It does take a
+while to set up and get used to, but I still like using it. Regardless, you are
+obviously free to choose whatever desktop environment or window manager you
+like, but if you do go with a window manager, this section may still be useful
+since most window managers require setting up similar things.
+
+Before we go any further though, there are a few things you should know. First,
+there exists a [Wayland] equivalent of i3 called [Sway]. Wayland is quite
+usable now (though Sway doesn't support Nvidia graphics cards), offers better
+security, and is aimed at modern-day use cases. However, the [VirtualBox Guest
+Additions] doesn't support automatic display resizing with Wayland, so for now,
+I stick with i3. Second, some desktop environments support using an alternative
+window manager, so if you like i3 (or any other window manager), but want a
+desktop experience that works out of the box, this is definitely an option to
+consider.
+
+[Wayland]: https://wiki.archlinux.org/title/Wayland
+[Sway]: https://wiki.archlinux.org/title/Sway
+
+#### Installation
+
+The [`i3`](https://archlinux.org/groups/x86_64/i3/) package group also includes
+some basic packages that you will likely find useful, but you probably don't
+want everything in the group since some of the packages provide the same
+functionality (and some of them even conflict with each other).
+
+* Window manager: `i3-wm`, [`i3-gaps`]
+
+  `i3-wm` is the normal i3 window manager and technically the only thing you
+  need to install to start using i3. `i3-gaps` is a fork that puts aesthetic
+  gaps between the windows. Of course, this is technically just a waste of
+  space, but it does look nice.
+
+[`i3-gaps`]: https://github.com/Airblader/i3
+
+* Status text: [`i3status`], [`i3blocks`]
+
+  `i3status` generates the status line at the bottom of the screen that
+  presents the time, current network status, battery, etc. `i3blocks` does the
+  same, but supports more functionality like supporting click events and
+  running arbitrary commands. `i3status` prides itself on being very fast and
+  honestly comes pretty close to having everything I want. However, having
+  clickable blocks is nice so I prefer using `i3blocks`. There are also other
+  alternatives too that provide similar functionality so explore around.
+
+[`i3status`]: https://i3wm.org/docs/i3status.html
+[`i3blocks`]: https://github.com/vivien/i3blocks
+
+* Screen locker: [`i3lock`], [`i3lock-color`], [`xscreensaver`], [`xsecurelock`]
+
+  Having a screen locker is not necessary for a VM, but for a physical machine,
+  you'd definitely want one. The default one is `i3lock` which is pretty basic
+  though still neat looking. However, it is missing some ~~basic~~ nicer
+  features like displaying the time. `i3lock-color` fixes all that and is more
+  customizable, though it does require installing via the AUR. `xscreensaver`
+  is a classic and comes with tons of weird graphical spectacles that'll stress
+  out your GPU and confuse your coworkers. Finally, there's `xsecurelock` which
+  is heavily focused on security (e.g. preventing password bypassing,
+  windows/notifications popping up), though if you actually want to keep your
+  computer secure, encrypt the entire drive and shut it down every time you
+  leave it. Anyway, it's honestly overkill for most people, but hey, it still
+  supports showing the time unlike `i3lock`, so this is the screen locker I go
+  with.
+
+[`i3lock`]: https://i3wm.org/i3lock/
+[`i3lock-color`]: https://github.com/Raymo111/i3lock-color
+[`xscreensaver`]: https://wiki.archlinux.org/title/XScreenSaver
+[`xsecurelock`]: https://github.com/google/xsecurelock
+
+#### Applications
+
+You will likely want to install various applications since a bare bones i3
+install has absolutely nothing which may be surprising for people used to other
+desktop environments or operating systems. I'd recommend installing at least a
+terminal emulator otherwise you will not be able to access a terminal inside i3
+(if you forget to do this, you'll need switch to another [Linux Console]).
+
+[Linux Console]: https://wiki.archlinux.org/title/Linux_console
+
+* Display manager: [`xinit`], [`sddm`], [`lightdm`]
+
+  If you installed a full desktop environment, it probably included a [display
+  manager] already so you should just use that. Otherwise, you have plenty of
+  choices on how to start Xorg. `xinit` is the most manual one since it only
+  provides the `startx` command which will start the desktop environment or
+  window manager configured in `~/.xinitrc`. As you may have guessed, you'll
+  still need to login via the Linux Console to run `startx` which isn't very
+  pretty. Also, if you frequently switch desktop environments or window
+  managers, modifying a config file each time is annoying, so I'd recommend a
+  proper display manager like `sddm` or `lightdm`. Either of them look nice
+  enough out of the box, and unlike some other display managers, they are not
+  specifically aimed at a certain desktop environment. Choose whatever suits
+  your tastes, but I prefer `lightdm` with the `lightdm-gtk-greeter` since it
+  looks simple and doesn't have too many dependencies.
+
+[display manager]: https://wiki.archlinux.org/title/Display_manager
+[`xinit`]: https://wiki.archlinux.org/title/Xinit
+[`sddm`]: https://wiki.archlinux.org/title/SDDM
+[`lightdm`]: https://wiki.archlinux.org/title/LightDM
+
+* Terminal emulator: [`xfce4-terminal`], [`terminator`], [`termite`],
+  [`alacritty`], [`kitty`], [`cool-retro-term`]
+
+  There are tons of terminal emulators you can use, so I'm not going to even
+  attempt to describe the different varieties, but here are some that I've
+  personally used that work for me. `xfce4-terminal` is a [VTE-based] terminal
+  that doesn't have any particularly unique features, but it gets the job done
+  without being heavyweight. `terminator` is another VTE-based terminal that
+  isn't intended for any particular desktop environment and includes plenty of
+  features. `termite` is a more minimal VTE-based terminal intended for tiling
+  window managers making it my preferred choice. However, it isn't being
+  maintained anymore, so I'm reluctant to recommend it.
+
+  Nowadays, GPU accelerated terminals are all the rage (because obviously you
+  need to be able to see text streaming at 144 fps), though I would warn you
+  that if your hardware doesn't have decent OpenGL support (e.g. VirtualBox),
+  these may not work well. `alacritty` is the default for [Sway], written in
+  Rust (if that matters to you), and is the officially sanctioned replacement
+  for `termite`. `kitty` is another GPU accelerated terminal that offers a lot
+  of flexibility with a variety of plugins. Finally, `cool-retro-term` is a fun
+  terminal that lets you time travel to the past when screen burn-in was a
+  thing and everything was monochrome.
+
+[`xfce4-terminal`]: https://docs.xfce.org/apps/terminal/start
+[`termite`]: https://wiki.archlinux.org/title/Termite
+[`terminator`]: https://wiki.archlinux.org/title/Terminator
+[`alacritty`]: https://wiki.archlinux.org/title/Alacritty
+[`kitty`]: https://wiki.archlinux.org/title/Kitty
+[`cool-retro-term`]: https://wiki.archlinux.org/title/Cool-retro-term
+[VTE-based]: https://gitlab.gnome.org/GNOME/vte
+
+* Application launcher: [`dmenu`], [`rofi`]
+
+  `dmenu` is the default application launcher and it works perfectly fine even
+  though it is a bit lacking in features. Out of the box, it will include
+  terminal programs as well which I find annoying since I would've opened up a
+  terminal if I wanted one of those. You can use the included
+  `i3-dmenu-desktop` script to instead only show programs with a desktop entry.
+  An alternative application launcher is `rofi` which has some more features
+  like showing icons, supporting themes, and switching applications (its
+  original purpose). Other than those, there are plenty of alternative
+  application launchers so choose what you like. I personally go with `rofi`
+  since it has icons.
+
+[`dmenu`]: https://wiki.archlinux.org/title/dmenu
+[`rofi`]: https://wiki.archlinux.org/title/Rofi
+
+* Font: [`noto-fonts`], [`ttf-dejavu`], [`ttf-hack`], [`terminus-font`],
+  [`gohufont`]
+
+  Not sure if I should bother having this section since font preference is
+  almost purely personal taste, but here we go anyway.
+
+  To ensure you have decent coverage, you'll want to start with a font that
+  [provides a base font set](https://wiki.archlinux.org/title/Font_package_guidelines#Provides).
+  `ttf-dejavu` is an extension of [Bitstream Vera](https://en.wikipedia.org/wiki/Bitstream_Vera)
+  intended to provide more Unicode coverage. It also includes a decent
+  monospace font with some thought paid to programming. Alternatively,
+  `noto-fonts` is a Google commissioned font that intends to cover all of
+  Unicode so there will be ["no more tofu"](https://www.google.com/get/noto/).
+  If you install its additional packages, you'll really get almost full
+  coverage, but it will take up a lot of space.
+
+  `ttf-hack` is a nice monospace font that is derived from the Bitstream Vera
+  and DejaVu, but includes some more programming specific adjustments. If you
+  prefer a bitmap font, you can try out `terminus-font` (the same font as
+  `Lat2-Terminus16` in the Linux Console) or `gohufont` from the AUR. However,
+  bitmap fonts are falling out of favor so you may have to struggle to get them
+  to work.
+
+[`noto-fonts`]: https://www.google.com/get/noto/
+[`ttf-dejavu`]: https://dejavu-fonts.github.io/
+[`ttf-hack`]: https://sourcefoundry.org/hack/
+[`terminus-font`]: http://terminus-font.sourceforge.net/
+[`gohufont`]: https://font.gohu.org/
+
+* Notification server: [`dunst`]
+
+  Without a notification server, you won't be able to see any notifications.
+  `dunst` is a lightweight notification server that allows some basic
+  appearance customization, notification history, and even scripting based on
+  the incoming notifications. You can also use notification servers
+  specifically intended for a desktop environment, but I find that `dunst` gets
+  the job done well enough.
+
+[`dunst`]: https://wiki.archlinux.org/title/Dunst
+
+### Backup Kernel
+
 TODO
 
 ### Firewall
 
 TODO
 
-### Backup Kernel
 
 ## Regular Maintenance
 
