@@ -704,15 +704,21 @@ hibernation, but for a VM with limited disk space, that might be too much
 space. I'd stick with just a few GiB (maybe even just 1 GiB). Feel free to make
 it larger since it's pretty easy to change the size later.
 
-### i3
+### VirtualBox Guest Additions
+
+If you are installing in VirtualBox, you should install the [VirtualBox Guest
+Additions] before you start trying to install any desktop environment or window
+manager. This will provide the correct graphics drivers, without which you may
+run into future issues. Be sure to enable the systemd service so the kernel
+modules get started correctly. For additional VirtualBox integration (shared
+clipboard, seamless mode), ensure that `VBoxClient-all` is set up to run upon
+login into the desktop.
+
+### Window Manager
 
 TODO
 
 ### Firewall
-
-TODO
-
-### VirtualBox Guest Additions
 
 TODO
 
