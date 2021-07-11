@@ -929,7 +929,36 @@ terminal emulator otherwise you will not be able to access a terminal inside i3
 
 ### Backup Kernel
 
-TODO
+Since Arch has a [rolling release] model, packages are upgraded promptly after
+the upstream source is. Though packages generally go through the [testing
+repository] first, the chances of something breaking are still higher than
+usual. This can especially be troublesome if a kernel upgrade breaks your
+system since generally you won't be able to boot anymore, and you'll have to
+resort to booting a live installation in order to fix things.
+
+With this in mind, I'd recommend also installing the [longterm release kernel].
+This kernel will still receive bug fixes and security updates, but not any new
+features present in the latest stable version. For Arch, you can install it via
+the [`linux-lts`] package. Note that this package runs the latest longterm
+release, so it still gets upgraded to whenever a new longterm release is chosen
+(approximately once a year).
+
+Once you've install the `linux-lts` package, you'll need to set up your boot
+loader to have additional entries for the `linux-lts` kernel. By default, the
+`mkinitcpio` hook should create new `vmlinuz-linux-lts` and
+`initramfs-linux-lts` files (as well as fallback versions) that you can refer
+to in the boot loader entry. GRUB's `grub-mkconfig` will actually detect the
+additional kernel versions for you.
+
+Note that using btrfs mitigates the need to keep a backup kernel (assuming your
+kernel is stored on the btrfs file system of course) since you can revert to an
+older version if something breaks. However, you may still want to keep a backup
+kernel anyway since you might not even be able to boot using the stable kernel.
+
+[rolling release]: https://en.wikipedia.org/wiki/Rolling_release
+[testing repository]: https://wiki.archlinux.org/title/Official_repositories#testing
+[longterm release kernel]: https://www.kernel.org/category/releases.html
+[`linux-lts`]: https://archlinux.org/packages/core/x86_64/linux-lts/
 
 ### Firewall
 
