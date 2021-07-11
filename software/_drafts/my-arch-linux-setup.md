@@ -947,28 +947,30 @@ carefully otherwise you may lock yourself out.
 
 ## Regular Maintenance
 
-Congratulations! Your Arch Linux system is fully set up and ready for use. If
-you are new to Arch, you should read through the [system maintenance] guide. To
-sum it up, you need to keep your system up-to-date on a regular basis with
-these steps:
+Congratulations! Your Arch Linux system is fully set up and ready for use
+(well, according to me at least). If you are new to Arch, you should read
+through the [system maintenance] guide. To sum it up, the main thing you need
+to do is keep your system up-to-date on a regular basis with these steps:
 
 1. Check <https://archlinux.org/> for any required manual intervention
 1. Run `pacman -Syu`
 1. Deal with any `pacnew` or `pacsave` files
 1. Reboot
+1. Confirm all your systemd services are working with `systemctl status`
 
 [system maintenance]: https://wiki.archlinux.org/title/System_maintenance
 
 Don't put this off since having to deal with multiple changes requiring manual
-intervention can be a pain and puts your system at risk of being permanently
-broken. Also, only do an upgrade when you can accept your system being broken
-for some time (e.g. don't upgrade right before an important presentation).
+intervention can be a pain and puts your system at higher risk of being
+permanently broken. Also, only do an upgrade when you can accept your system
+being broken for some time (e.g. don't upgrade right before an important
+presentation).
 
 ## Conclusion
 
 Hopefully you got what you needed out of this guide. Though Arch can be a pain
 to set up, many Arch users enjoy having a system that they "built"
-themselves[^built]. Whether you decide to join them or not, hopefully you found
+themselves[^built]. Whether you decide to join us or not, hopefully you found
 this experience valuable.
 
 [^built]: Actually, if you want the real "build-it-yourself" experience, you should consider trying out [Gentoo] or [LFS] (Linux From Scratch). I personally have not tried either of them, but my initial impressions are that they aren't worth the hassle. They do offer more customizability than Arch since they require you to compile everything from source, but that doesn't seem that useful unless you are trying to micro-optimize for your hardware, using an unusual CPU architecture, or want to experience truly building a Linux system yourself.
