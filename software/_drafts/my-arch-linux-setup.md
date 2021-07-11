@@ -40,7 +40,7 @@ functionality. Here are some of the key choices I made:
 | Window manager       | [i3]                                      |
 | Swap                 | [Swap file]                               |
 | Networking           | [systemd-networkd] and [systemd-resolved] |
-| Firewall             | TODO                                      |
+| Firewall             | [ufw]                                     |
 
 [GRUB]: https://wiki.archlinux.org/title/GRUB
 [dm-crypt]: https://wiki.archlinux.org/title/Dm-crypt
@@ -49,6 +49,7 @@ functionality. Here are some of the key choices I made:
 [Swap file]: https://wiki.archlinux.org/title/Swap#Swap_file
 [systemd-networkd]: https://wiki.archlinux.org/title/Systemd-networkd
 [systemd-resolved]: https://wiki.archlinux.org/title/Systemd-resolved
+[ufw]: https://wiki.archlinux.org/title/Uncomplicated_Firewall
 
 ## Pre-installation
 
@@ -932,8 +933,17 @@ TODO
 
 ### Firewall
 
-TODO
+Linux doesn't exactly need a firewall since ports are closed by default, but if
+you'd like to be a bit safer, I'd still recommend having at least a basic one
+set up. This is especially true if you run any services that accept incoming
+connections (ssh, Samba) or your system is exposed on the public internet.
+Though you can manage [`nftables`] manually, I find that using [ufw] works
+pretty well and is much simpler. It generally has acceptable defaults, but
+you'll still need to add exceptions for any services you wish to expose. If you
+can only access your system remotely, be sure to set up the exception for ssh
+carefully otherwise you may lock yourself out.
 
+[`nftables`]: https://wiki.archlinux.org/title/nftables
 
 ## Regular Maintenance
 
