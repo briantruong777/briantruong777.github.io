@@ -6,11 +6,9 @@ set up, it offers a great opportunity to learn exactly how everything fits
 together in a Linux system. There's also that pleasant satisfaction when
 everything is finally set up exactly the way I like it. In the interest of
 making this process easier for both myself and others, I've written down my
-personal guide to setting up Arch Linux. Though this guide does set up Arch as
-a [VirtualBox] guest, a lot of this applies to my other setups as well.
+personal guide to setting up Arch Linux. 
 
 [Arch Linux]: https://archlinux.org/
-[VirtualBox]: https://www.virtualbox.org/
 
 * TOC
 {:toc}
@@ -30,18 +28,20 @@ running Arch.
 Rather than just going through all the steps, I will focus on explaining the
 rationale behind my decisions. After all, the benefit of Arch is that you get
 to make the choice, and I would hate to completely take that away from you.
-Note that this guide is aimed at a virtual machine setup so I've purposefully
-gone with a simpler setup since a VM usually doesn't need as much
-functionality. Here are some of the key choices I made:
+Note that this guide is somewhat aimed at a [VirtualBox] setup so some of the
+choices may be non-ideal for a physical machine, though I will still cover some
+things that aren't useful for a VM (full-disk encryption). Here are some of the
+key choices I made:
 
 | Boot loader          | [GRUB]                                    |
-| Full disk encryption | [dm-crypt]                                |
+| Full disk encryption | [dm-crypt], `/boot` is included           |
 | File system          | [btrfs]                                   |
 | Window manager       | [i3]                                      |
 | Swap                 | [Swap file]                               |
 | Networking           | [systemd-networkd] and [systemd-resolved] |
 | Firewall             | [ufw]                                     |
 
+[VirtualBox]: https://www.virtualbox.org/
 [GRUB]: https://wiki.archlinux.org/title/GRUB
 [dm-crypt]: https://wiki.archlinux.org/title/Dm-crypt
 [btrfs]: https://wiki.archlinux.org/title/btrfs
@@ -53,28 +53,35 @@ functionality. Here are some of the key choices I made:
 
 ## Pre-installation
 
-To start off, download an installation image and then create a new VM in
-VirtualBox. There are a variety of settings you can configure as you like, but
-there are a few recommendations I would make.
+To start off, [download an installation image](https://archlinux.org/download/)
+and then boot it up.
+
+### VirtualBox Guest
+
+If you are not installing Arch as a VirtualBox guest, you can skip this
+section. First, create a new VM in VirtualBox. There are a variety of settings
+you can configure as you like, but there are a few recommendations I would
+make.
 
 First, enable EFI mode. Though it's perfectly fine to stick to BIOS mode, most
 modern computers are using UEFI, so you might as well get used to it. If you do
 decide to stick with BIOS mode, be sure you choose a boot loader that supports
 it since some newer boot loaders only support UEFI.
 
-Second, for VMs I recommend choosing the disk size wisely. Though it's possible
-to resize things later (or add more drives if you use [btrfs]), it's more
-convenient to ensure you have enough space from the beginning. Arch can be run
-very lightweight, but in my experience, 8 GB is as low as you'd want to go and
-still have an acceptable desktop environment. Even then, space will be tight if
-you start installing a lot of larger packages (LaTeX, fonts, etc.) and that's
-not even including your own files. I personally go with 32 GB so I don't need
-to worry too much about it.
+Second, you'll need to choose the disk size. Though it's possible to resize
+things later (or add more drives if you use [btrfs]), it's more convenient to
+ensure you have enough space from the beginning. Arch can be run very
+lightweight, but in my experience, 8 GB is as low as you'd want to go and still
+have an acceptable desktop environment. Even then, space will be tight if you
+start installing a lot of larger packages (LaTeX, fonts, etc.) and that's not
+even including your own files. I personally go with 32 GB so I don't need to
+worry too much about it. Obviously you'll need more space if you have lots of
+personal files (documents, datasets, videos, etc.).
 
 Finally, here are some less important options that I like to set.
 
 * Enable the shared clipboard. This won't actually work until we install the
-  [VirtualBox Guest Additions], but feel free to enable it early so we don't
+  [VirtualBox Guest Additions], but feel free to enable it early so you don't
   forget.
 * Set the amount of memory. Make sure not to exceed what your host system has
   available.
@@ -89,23 +96,27 @@ Finally, here are some less important options that I like to set.
   preventing execution of code in data-only memory pages. I'm not actually sure
   enabling this alone is enough, but might as well do so.
 * Set video memory to the maximum (128 MB). This is already a relatively small
-  amount and will likely not be enough for graphics heavy workloads.
+  amount and will likely not be enough for graphics heavy workloads, so even a
+  basic desktop environment might have trouble with anything less.
 * Enable 3D acceleration. This will allow usage of your host system's graphics
   card and will improve performance of programs that can take advantage of that
   (e.g. web browsers).
 * If you are storing the VM's hard drive on an SSD, mark the SSD attribute for
   the disk. This will tell the guest system that it is on an SSD so it can
-  change it's behavior to take advantage of that.
+  change its behavior to take advantage of that.
 * Disable showing the mini toolbar in full-screen mode. This is just my
   personal taste, but I prefer not having any VirtualBox UI when in full-screen
   mode.
 
+Add the installation image to the VM and then boot it.
+
 [VirtualBox Guest Additions]: https://wiki.archlinux.org/title/VirtualBox/Install_Arch_Linux_as_a_guest#Install_the_Guest_Additions
 [Physical Address Extension]: https://en.wikipedia.org/wiki/Physical_Address_Extension
 
-Set up the VM to boot from the installation image and then boot it. This will
-bring you into a live installation of Arch Linux that you will use to set up
-your actual installation. Note that you may want to do everything inside
+### Initial Steps
+
+You are now inside a live installation of Arch Linux which you will use to set
+up your actual installation. Note that you may want to do everything inside
 [`tmux`] so you can scrollback to previous output[^console] and copy/paste
 between multiple terminals.
 
@@ -117,7 +128,7 @@ Start off with the first basic steps of:
 1. Confirm you have internet access.
 1. Enable NTP for the system clock.
 
-[^console]: You may be thinking that the Linux console previously had scrollback capabilities by itself. Don't worry, you're not crazy. [It was removed somewhat recently due to bit rot of the code](https://www.phoronix.com/scan.php?page=news_item&px=Linux-5.9-Drops-Soft-Scrollback). Actually, it's possible by the time you are reading this, it was restored back already in which case maybe `tmux` will be less useful.
+[^console]: You may be thinking that the Linux console previously had scrollback capabilities by itself. Don't worry, you're not crazy. [It was removed somewhat recently](https://www.phoronix.com/scan.php?page=news_item&px=Linux-5.9-Drops-Soft-Scrollback). Actually, it's possible by the time you are reading this, it was restored back already in which case maybe `tmux` will be less useful.
 [`terminus-font`]: https://archlinux.org/packages/community/any/terminus-font/
 
 ### Disk Partitioning
@@ -140,30 +151,45 @@ to keep it simple, we will only have 2 partitions:
 [^mbr]: The ArchWiki's entry on [partitioning](https://wiki.archlinux.org/title/Partitioning#Choosing_between_GPT_and_MBR) describes these reasons in more detail, but in general, there's little reason to use MBR unless you are stuck with legacy hardware.
 [EFI system partition]: https://en.wikipedia.org/wiki/EFI_system_partition
 
-We will not need a swap partition because we will be using a [swap file]
-instead. Swap files are convenient to resize (or even delete entirely to free
-up space in a pinch). However, if you choose to run [btrfs] and wish to add
-more disks in the future, you may want to use a swap partition since
+If you want a separate [swap partition], then you'll need to make that now as
+well. Though swap partitions are the easiest way to get swap space, they also
+aren't very flexible since it's hard to move, merge, or expand a partition.
+Therefore, I will focus on setting up a [swap file] instead. Swap files are
+convenient to resize (or even delete entirely to free up space in a pinch).
+However, if you choose to run [btrfs] and wish to add more disks in the future,
+you may want to use a swap partition since
 [btrfs doesn't support swap files on filesystems with multiple disks](https://btrfs.wiki.kernel.org/index.php/FAQ#Does_Btrfs_support_swap_files.3F).
-On a VM, increasing the disk's size isn't that hard, but on a real machine,
-adding another disk is a much simpler option than trying to copy everything on
-the smaller disk onto a larger disk.
+Note that for a VM, it's probably easier to set up a separate virtual drive
+solely for a swap partition.
 
-Note that we will be keeping our kernel and initramfs (aka the `/boot`
-directory) in the encrypted root directory partition so that when we take a
-btrfs snapshot, it will encompass the entire system including the kernel. This
-is important because usually kernel modules are not installed under `/boot`, so
-if we kept the kernel in a separate partition, it would not be snapshotted and
-restored in sync with the kernel modules which will break things.
+[swap partition]: https://wiki.archlinux.org/title/swap#Swap_partition
 
-As a side effect, this will also keep our kernel encrypted which will stop an
-attacker from directly modifying the kernel. However, this won't stop a
-particularly determined attacker since they can modify the boot loader instead
-which will give them access to your system after you decrypt it[^maid].
+#### Encrypting /boot
+
+Note that in this guide, we will be keeping our kernel and initramfs (aka the
+`/boot` directory) in the encrypted root directory partition so that when we
+take a btrfs snapshot, it will encompass the entire system including the
+kernel. This is important because usually kernel modules are not installed
+under `/boot`, so if we kept the kernel in a separate partition, it would not
+be snapshotted and restored in sync with the kernel modules which will break
+things.
+
+As a side effect, keeping our kernel encrypted will also stop an attacker from
+directly modifying the kernel. However, this won't stop a particularly
+determined attacker since they can modify the boot loader instead which will
+give them access to your system after you decrypt it[^maid].
 
 [^maid]: This attack vector is known as the [Evil Maid Attack]. The correct way to prevent this is to use [Secure Boot], but in my opinion, that is overkill unless you worried about an intelligence agency coming for you.
 [Evil Maid Attack]: https://www.schneier.com/blog/archives/2009/10/evil_maid_attac.html
 [Secure Boot]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot
+
+However, keeping `/boot` encrypted limits our choice of boot loader since
+currently only [GRUB] can unlock a LUKS partition. If the above advantages
+don't sound useful to you, then I'd highly recommend keeping `/boot`
+unencrypted by either keeping it in the EFI system partition or making a
+separate boot partition.
+
+#### Running the Partitioning Tool
 
 There are many tools that can be used to partition the drive so choose whatever
 suits you (I personally just use `fdisk`). The ArchWiki recommends making the
@@ -172,7 +198,7 @@ EFI system partition 260 MB which I believe comes from the
 Use the remainder of the disk as the second partition which will be storing the
 root directory.
 
-### Set Up Encryption
+### Disk Encryption
 
 We will be using [dm-crypt] to encrypt the entire root directory partition. The
 main reason to do this is to prevent someone from accessing your data if your
@@ -200,19 +226,20 @@ mount point (e.g. `/dev/mapper/cryptroot`) rather than the partition itself
 otherwise you will destroy the encryption. In this guide, we will be using
 [btrfs] since it supports snapshots and automatic compression.
 
-Now before we get any further, I know that btrfs has a pretty bad reputation
-for losing data which is pretty much the worst possible thing a file system
-could do. This is especially ironic since it is a [copy-on-write] file system
-which are traditionally considered to be safer from corruptions since they
-easily support atomic operations due to simply never overwriting previous
-data/metadata. I believe most of these stories were from people using btrfs
-with a RAID5/6 setup [which even now isn't supported by btrfs](https://btrfs.wiki.kernel.org/index.php/RAID56).
-Anyway, I don't have much experience with btrfs, but it has a lot of nice
-features and enough people saying good things about it (it's now the
-[default for Fedora](https://fedoraproject.org/wiki/Changes/BtrfsByDefault))
+Now before we get any further, I need to acknowledge that btrfs has a pretty
+bad reputation for losing data which is pretty much the worst possible thing a
+file system could do. This is especially ironic since it is a [copy-on-write]
+file system. Usually such file systems are considered safer from corruptions
+since their operations are naturally atomic due to simply never overwriting
+previous data/metadata. I believe most issues were from people using btrfs with
+a RAID5/6 setup [which even now isn't supported](https://btrfs.wiki.kernel.org/index.php/RAID56),
+but there are definitely enough horror stories to warrant caution. Anyway, I
+don't have much experience with btrfs, but it has a lot of nice features and
+enough people saying good things about it (it's now the [default for Fedora](https://fedoraproject.org/wiki/Changes/BtrfsByDefault))
 for me to justify using it. Still, if its reputation scares you off, feel free
 to use a different file system (e.g. [ZFS] is another CoW file system that is
-largely considered to be better in every way).
+largely considered to be better in every way except it is optimized for
+enterprise usage).
 
 [copy-on-write]: https://en.wikipedia.org/wiki/Copy-on-write
 [ZFS]: https://wiki.archlinux.org/title/ZFS
@@ -234,9 +261,9 @@ worth the CPU cost to reduce it. For SSDs though, it's probably a performance
 hit most of the time. Still, if disk space is more important to you, the
 [performance penalty](https://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git/commit/?h=next&id=5c1aab1dd5445ed8bdcdbb575abc1b0d7ee5b2e7)
 is likely worth it (e.g. our VM with only 32 GB of space). If performance is
-more important, you could choose the LZO algorithm since it is the fastest, but
-at that point, you should probably just not enable compression at all. If you
-do decide to enable compression, you should mount with the option
+still important, you could choose the LZO algorithm since it is the fastest,
+but at that point, you should probably just not enable compression at all. If
+you do decide to enable compression, you should mount with the option
 `compress=zstd:1` since the ZSTD algorithm seems better than the default ZLIB,
 and level 1 already provides significant compression so more isn't worth the
 additional overhead.
@@ -252,14 +279,14 @@ more expensive.
 #### Subvolume Layout
 
 Before we start mounting things, we should figure out how we want to lay out
-our [subvolumes]. Subvolumes act as directory-like mount points that maintain
-their own file tree even though they are all part of the same file system. Most
-usefully for us, subvolumes support snapshotting. In btrfs, a [snapshot] is
-just a subvolume that starts off with the same file tree of another subvolume.
-Once the snapshot is created, its file tree is modified independently of the
-original subvolume e.g. writes to one subvolume will not affect files in the
-other. Cheap snapshotting is one of the main advantages of a [copy-on-write]
-file system.
+our btrfs [subvolumes] (if you aren't using btrfs, you can skip this section).
+Subvolumes act as directory-like mount points that maintain their own file tree
+even though they are all part of the same file system. Most usefully for us,
+subvolumes support snapshotting. In btrfs, a [snapshot] is just a subvolume
+that starts off with the file tree of another subvolume. Once the snapshot is
+created, its file tree is modified independently of the original subvolume i.e.
+writes to one subvolume will not affect files in the other. Cheap snapshotting
+is one of the main advantages of a [copy-on-write] file system.
 
 [subvolumes]: https://btrfs.wiki.kernel.org/index.php/SysadminGuide#Subvolumes
 [snapshot]: https://btrfs.wiki.kernel.org/index.php/SysadminGuide#Snapshots
@@ -313,9 +340,9 @@ everything else. Some packages I like to install early since they are pretty
 helpful even without configuration:
 
 * [`btrfs-progs`]
-  * Provides user-space tools for working with btrfs. Note that this package is
-    basically a necessity because when you generate the initramfs via
-    `mkinitcpio`, it will be unable to run the fsck build hook without this.
+  * Provides user-space tools for working with btrfs. This package is basically
+    a necessity because when you generate the initramfs via `mkinitcpio`, it
+    will be unable to run the fsck build hook without this.
 * [`man-db` and `man-pages`](https://wiki.archlinux.org/title/Man_page)
   * The ubiquitous `man` command is the standard way to read documentation on
     various commands, programs, system calls, etc. Though most of these can be
@@ -394,8 +421,8 @@ systemd equivalents.
 
 I'd also highly recommend including a key file in the initramfs so it can
 unlock the root partition without you having to type in the password again. Be
-sure to keep the key file secure and the initramfs (including the fallback one)
-secure by setting the permissions so only the root user can read them.
+sure to keep the key file and the initramfs (including the fallback one) secure
+by setting the permissions so only the root user can read them.
 
 Don't forget to run `mkinitcpio -P` otherwise your system will still use the
 old initramfs and your changes won't take effect likely causing your system to
@@ -405,14 +432,21 @@ fail to boot!
 
 The last thing we need to do before we can boot into our system is set up a
 boot loader. Usually we'd have multiple choices here, but since we need a
-bootloader that can both decrypt a LUKS partition and read files stored on
-btrfs, [GRUB] is our only option.
+bootloader that can both decrypt a LUKS partition and read btrfs, [GRUB] is our
+only option. If you are not encrypting your `/boot`, then you can go with a
+boot loader that just supports btrfs like [rEFInd]. If you aren't using that
+either, then [`systemd-boot`] is simple, works pretty well, and is already
+installed by default. The rest of this guide will assume you went with GRUB,
+but I would recommend going with something simpler if you can.
+
+[rEFInd]: https://wiki.archlinux.org/title/REFInd
+[`systemd-boot`]: https://wiki.archlinux.org/title/Systemd-boot
 
 Be sure to configure things correctly otherwise your system won't boot. The
 instructions for GRUB are quite complicated. At a high level, you need to do
 the following:
 
-1. Enable `GRUB_ENABLE_CRYPTODISK=y`
+1. Set `GRUB_ENABLE_CRYPTODISK=y`
 1. Run `grub-install`
 1. Configure `/etc/default/grub`
 1. Run `grub-mkconfig`
@@ -429,8 +463,8 @@ correct [microcode] for your CPU.
 ### Reboot
 
 Assuming nothing went wrong, you should have a functioning Arch Linux system,
-so exit the chroot. Feel free to try `umount -R /mnt` to see if there is still
-some process busy reading/writing to something (use `fuser` to figure out who).
+so exit the chroot. Try running `umount -R /mnt` to see if there is still some
+process busy reading/writing to something (use `fuser` to figure out who).
 Finally, you should reboot the machine to see if your new OS boots up (don't
 forget to remove the installation image and consider changing the boot order to
 try the hard disk first).
@@ -446,9 +480,9 @@ At this point, feel free to close this guide and do your own thing. Your system
 can independently boot itself now, and you can install whatever you like via
 `pacman`. However, I would not consider this system to be complete since it
 needs some work until it's usable and secure enough for daily usage. As you may
-have guessed, this is based on the official [general recommendations] page
-which is usually what you would follow after finishing the [installation
-guide].
+have guessed, the rest of this guide is based on the official [general
+recommendations] page which is usually what you would follow after finishing
+the [installation guide].
 
 [general recommendations]: https://wiki.archlinux.org/title/General_recommendations
 
@@ -571,8 +605,10 @@ don't apply to you, and then run the following:
 # passwd -l root
 ```
 
-Note that you can still "login" as the root user by doing `sudo -i` to get a
-root shell.
+You can still "login" as the root user by doing `sudo -i` to get a root shell.
+Note that if something goes wrong during boot, Linux will sometimes drop you in
+a root shell, but if you disable root login, this will stop working. If this
+worries you, then you should skip this step.
 
 ### Pacman
 
@@ -586,11 +622,11 @@ file you may be interested in:
   of 5 is probably fine unless it isn't enough to fully saturate your download
   bandwidth.
 
-`pacman` also supports [pre/post-transaction hooks](https://wiki.archlinux.org/title/Pacman#Hooks)
+`pacman` supports [pre/post-transaction hooks](https://wiki.archlinux.org/title/Pacman#Hooks)
 which allow you to run arbitrary commands before/after `pacman` does anything.
 You could create a hook to take a btrfs snapshot right before anything happens
 (be sure to give it an alphabetically early name to ensure this) which makes it
-easy to revert a bad upgrade, though note that it might be a finnicky since the
+easy to revert a bad upgrade. Note that it might be a bit finnicky since the
 snapshot will likely include `pacman`'s lock file. Check out `man alpm-hooks`
 for details on the syntax of the hook files. If you don't feel like doing all
 this manually, consider using [Snapper] and follow [these instructions](https://wiki.archlinux.org/title/Snapper#Wrapping_pacman_transactions_in_snapshots).
@@ -637,36 +673,6 @@ update your mirrors regularly, I would recommend enabling the systemd timer
 (`reflector.timer`) instead since you really don't need to update your mirrors
 that often.
 
-### AUR
-
-The [Arch User Repository] is a repository of PKGBUILD scripts that is
-maintained by various Arch Linux users. Unlike with packages that come from the
-[official repositories], these PKGBUILD scripts are not maintained by trusted
-package maintainers meaning you *cannot* blindly trust anything from the AUR.
-Despite this, the AUR is still very useful for packages that are not popular
-enough to be in the official repositories, so there are many users who
-regularly use packages built from the AUR. To this end, there are many [AUR
-helpers] that can make installing packages from the AUR convenient since
-usually you'd need to manually download the PKGBUILD file and any dependencies
-it needs, build the package, and then install the package. Doing this once in a
-while isn't a big deal, but having to do it every time the package updates is a
-pain.
-
-[Arch User Repository]: https://wiki.archlinux.org/title/Arch_User_Repository
-[official repositories]: https://wiki.archlinux.org/title/Official_repositories
-[AUR helpers]: https://wiki.archlinux.org/title/AUR_helpers
-
-Of course, AUR helpers are not in the official repositories either, so to
-install one, you'll have to manually build it. Follow [these instructions](https://wiki.archlinux.org/title/Arch_User_Repository#Installing_and_upgrading_packages)
-carefully to install your AUR helper of choice. There are many to choose from,
-but nowadays I usually use [`yay`] or [`paru`]. Note that even if you use an
-AUR helper, you should always strive to check the PKGBUILD and other files to
-ensure there isn't anything suspicious. Any decent AUR helper will make it
-easier by showing you the diff every time the package updates.
-
-[`yay`]: https://github.com/Jguer/yay
-[`paru`]: https://github.com/morganamilo/paru
-
 ### Swap
 
 Though you can probably get pretty far without any [swap] (especially if you
@@ -674,7 +680,7 @@ have tons of memory), it's best to have some just in case you exhaust all your
 RAM. Otherwise, programs will get killed by the kernel and you'll be at higher
 risk of locking up your entire system. Also, if you wish to set up
 [hibernation], you'll need swap space at least as large as your RAM otherwise
-hibernation might fail sometimes if there is too much RAM to save.
+hibernation might fail if there is too much RAM to save.
 
 [swap]: https://wiki.archlinux.org/title/Swap
 [hibernation]: https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate#Hibernation
@@ -704,6 +710,36 @@ Usually you'd match the amount of RAM just in case you do decide to set up
 hibernation, but for a VM with limited disk space, that might be too much
 space. I'd stick with just a few GiB (maybe even just 1 GiB). Feel free to make
 it larger since it's pretty easy to change the size later.
+
+### AUR
+
+The [Arch User Repository] is a repository of PKGBUILD scripts that is
+maintained by various Arch Linux users. Unlike with packages that come from the
+[official repositories], these PKGBUILD scripts are not maintained by trusted
+package maintainers meaning you *cannot* blindly trust anything from the AUR.
+Despite this, the AUR is still very useful for packages that are not popular
+enough to be in the official repositories, so there are many users who
+regularly use packages built from the AUR. To this end, there are many [AUR
+helpers] that can make installing packages from the AUR convenient since
+usually you'd need to manually download the PKGBUILD file and any dependencies
+it needs, build the package, and then install the package. Doing this once in a
+while isn't a big deal, but having to do it every time the package updates is a
+pain.
+
+[Arch User Repository]: https://wiki.archlinux.org/title/Arch_User_Repository
+[official repositories]: https://wiki.archlinux.org/title/Official_repositories
+[AUR helpers]: https://wiki.archlinux.org/title/AUR_helpers
+
+Of course, AUR helpers are not in the official repositories either, so to
+install one, you'll have to manually build it. Follow [these instructions](https://wiki.archlinux.org/title/Arch_User_Repository#Installing_and_upgrading_packages)
+carefully to install your AUR helper of choice. There are many to choose from,
+but nowadays I usually use [`yay`] or [`paru`]. Note that even if you use an
+AUR helper, you should always strive to check the PKGBUILD and other files to
+ensure there isn't anything suspicious. Any decent AUR helper will make it
+easier by showing you the diff every time the package updates.
+
+[`yay`]: https://github.com/Jguer/yay
+[`paru`]: https://github.com/morganamilo/paru
 
 ### VirtualBox Guest Additions
 
@@ -751,10 +787,11 @@ there exists a [Wayland] equivalent of i3 called [Sway]. Wayland is quite
 usable now (though Sway doesn't support Nvidia graphics cards), offers better
 security, and is aimed at modern-day use cases. However, the [VirtualBox Guest
 Additions] doesn't support automatic display resizing with Wayland, so for now,
-I stick with i3. Second, some desktop environments support using an alternative
-window manager, so if you like i3 (or any other window manager), but want a
-desktop experience that works out of the box, this is definitely an option to
-consider.
+I stick with i3.
+
+Second, some desktop environments support using an alternative window manager,
+so if you like i3 (or any other window manager), but want a desktop experience
+that works out of the box, this is definitely an option to consider.
 
 [Wayland]: https://wiki.archlinux.org/title/Wayland
 [Sway]: https://wiki.archlinux.org/title/Sway
@@ -770,8 +807,8 @@ functionality (and some of them even conflict with each other).
 
   `i3-wm` is the normal i3 window manager and technically the only thing you
   need to install to start using i3. `i3-gaps` is a fork that puts aesthetic
-  gaps between the windows. Of course, this is technically just a waste of
-  space, but it does look nice.
+  gaps between the windows. Of course, this is technically a waste of space,
+  but it does look nice.
 
 [`i3-gaps`]: https://github.com/Airblader/i3
 
@@ -799,10 +836,10 @@ functionality (and some of them even conflict with each other).
   out your GPU and confuse your coworkers. Finally, there's `xsecurelock` which
   is heavily focused on security (e.g. preventing password bypassing,
   windows/notifications popping up), though if you actually want to keep your
-  computer secure, encrypt the entire drive and shut it down every time you
-  leave it. Anyway, it's honestly overkill for most people, but hey, it still
-  supports showing the time unlike `i3lock`, so this is the screen locker I go
-  with.
+  computer secure, encrypt the entire drive and shut it down or hibernate every
+  time you leave it. Anyway, it's honestly overkill for most people, but hey,
+  it still supports showing the time unlike `i3lock`, so this is the screen
+  locker I go with.
 
 [`i3lock`]: https://i3wm.org/i3lock/
 [`i3lock-color`]: https://github.com/Raymo111/i3lock-color
@@ -815,7 +852,8 @@ You will likely want to install various applications since a bare bones i3
 install has absolutely nothing which may be surprising for people used to other
 desktop environments or operating systems. I'd recommend installing at least a
 terminal emulator otherwise you will not be able to access a terminal inside i3
-(if you forget to do this, you'll need switch to another [Linux Console]).
+(if you forget to do this, you'll need switch to another [Linux Console] to get
+access to a terminal).
 
 [Linux Console]: https://wiki.archlinux.org/title/Linux_console
 
@@ -847,15 +885,15 @@ terminal emulator otherwise you will not be able to access a terminal inside i3
   attempt to describe the different varieties, but here are some that I've
   personally used that work for me. `xfce4-terminal` is a [VTE-based] terminal
   that doesn't have any particularly unique features, but it gets the job done
-  without being heavyweight. `terminator` is another VTE-based terminal that
-  isn't intended for any particular desktop environment and includes plenty of
-  features. `termite` is a more minimal VTE-based terminal intended for tiling
-  window managers making it my preferred choice. However, it isn't being
-  maintained anymore, so I'm reluctant to recommend it.
+  without being too light or too heavy. `terminator` is another VTE-based
+  terminal that isn't intended for any particular desktop environment and
+  includes plenty of features. `termite` is a more minimal VTE-based terminal
+  intended for tiling window managers making it my preferred choice. However,
+  it isn't being maintained anymore, so I'm reluctant to recommend it.
 
   Nowadays, GPU accelerated terminals are all the rage (because obviously you
-  need to be able to see text streaming at 144 fps), though I would warn you
-  that if your hardware doesn't have decent OpenGL support (e.g. VirtualBox),
+  need to be able to see text streaming at 144 fps), though I should warn you
+  that if your hardware doesn't have modern OpenGL support (e.g. VirtualBox),
   these may not work well. `alacritty` is the default for [Sway], written in
   Rust (if that matters to you), and is the officially sanctioned replacement
   for `termite`. `kitty` is another GPU accelerated terminal that offers a lot
@@ -903,8 +941,8 @@ terminal emulator otherwise you will not be able to access a terminal inside i3
   If you install its additional packages, you'll really get almost full
   coverage, but it will take up a lot of space.
 
-  `ttf-hack` is a nice monospace font that is derived from the Bitstream Vera
-  and DejaVu, but includes some more programming specific adjustments. If you
+  `ttf-hack` is a nice monospace font that is derived from Bitstream Vera and
+  DejaVu, but includes some more programming specific adjustments. If you
   prefer a bitmap font, you can try out `terminus-font` (the same font as
   `Lat2-Terminus16` in the Linux Console) or `gohufont` from the AUR. However,
   bitmap fonts are falling out of favor so you may have to struggle to get them
@@ -936,14 +974,20 @@ usual. This can especially be troublesome if a kernel upgrade breaks your
 system since generally you won't be able to boot anymore, and you'll have to
 resort to booting a live installation in order to fix things.
 
+[rolling release]: https://en.wikipedia.org/wiki/Rolling_release
+[testing repository]: https://wiki.archlinux.org/title/Official_repositories#testing
+
 With this in mind, I'd recommend also installing the [longterm release kernel].
 This kernel will still receive bug fixes and security updates, but not any new
 features present in the latest stable version. For Arch, you can install it via
 the [`linux-lts`] package. Note that this package runs the latest longterm
-release, so it still gets upgraded to whenever a new longterm release is chosen
+release, so it still gets upgraded whenever a new longterm release is chosen
 (approximately once a year).
 
-Once you've install the `linux-lts` package, you'll need to set up your boot
+[longterm release kernel]: https://www.kernel.org/category/releases.html
+[`linux-lts`]: https://archlinux.org/packages/core/x86_64/linux-lts/
+
+Once you've installed the `linux-lts` package, you'll need to set up your boot
 loader to have additional entries for the `linux-lts` kernel. By default, the
 `mkinitcpio` hook should create new `vmlinuz-linux-lts` and
 `initramfs-linux-lts` files (as well as fallback versions) that you can refer
@@ -953,12 +997,7 @@ additional kernel versions for you.
 Note that using btrfs mitigates the need to keep a backup kernel (assuming your
 kernel is stored on the btrfs file system of course) since you can revert to an
 older version if something breaks. However, you may still want to keep a backup
-kernel anyway since you might not even be able to boot using the stable kernel.
-
-[rolling release]: https://en.wikipedia.org/wiki/Rolling_release
-[testing repository]: https://wiki.archlinux.org/title/Official_repositories#testing
-[longterm release kernel]: https://www.kernel.org/category/releases.html
-[`linux-lts`]: https://archlinux.org/packages/core/x86_64/linux-lts/
+kernel anyway since you might not even be able to boot using the broken kernel.
 
 ### Firewall
 
@@ -968,8 +1007,8 @@ set up. This is especially true if you run any services that accept incoming
 connections (ssh, Samba) or your system is exposed on the public internet.
 Though you can manage [`nftables`] manually, I find that using [ufw] works
 pretty well and is much simpler. It generally has acceptable defaults, but
-you'll still need to add exceptions for any services you wish to expose. If you
-can only access your system remotely, be sure to set up the exception for ssh
+you'll need to add exceptions for any services you wish to expose. If you can
+only access your system remotely, be sure to set up the exception for ssh
 carefully otherwise you may lock yourself out.
 
 [`nftables`]: https://wiki.archlinux.org/title/nftables
@@ -977,11 +1016,12 @@ carefully otherwise you may lock yourself out.
 ## Regular Maintenance
 
 Congratulations! Your Arch Linux system is fully set up and ready for use
-(well, according to me at least). If you are new to Arch, you should read
-through the [system maintenance] guide. To sum it up, the main thing you need
-to do is keep your system up-to-date on a regular basis with these steps:
+(well, according to my standards at least). If you are new to Arch, you should
+read through the [system maintenance] guide. To sum it up, the main thing you
+need to do is keep your system up-to-date on a regular basis with these steps:
 
-1. Check <https://archlinux.org/> for any required manual intervention
+1. Check [archlinux.org](https://archlinux.org/) for any required manual
+   intervention
 1. Run `pacman -Syu`
 1. Deal with any `pacnew` or `pacsave` files
 1. Reboot
