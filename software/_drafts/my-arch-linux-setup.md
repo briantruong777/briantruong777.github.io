@@ -878,31 +878,32 @@ access to a terminal).
 [`sddm`]: https://wiki.archlinux.org/title/SDDM
 [`lightdm`]: https://wiki.archlinux.org/title/LightDM
 
-* Terminal emulator: [`xfce4-terminal`], [`terminator`], [`termite`],
+* Terminal emulator: [`gnome-terminal`], [`xfce4-terminal`], [`terminator`],
   [`alacritty`], [`kitty`], [`cool-retro-term`]
 
   There are tons of terminal emulators you can use, so I'm not going to even
   attempt to describe the different varieties, but here are some that I've
-  personally used that work for me. `xfce4-terminal` is a [VTE-based] terminal
-  that doesn't have any particularly unique features, but it gets the job done
-  without being too light or too heavy. `terminator` is another VTE-based
-  terminal that isn't intended for any particular desktop environment and
-  includes plenty of features. `termite` is a more minimal VTE-based terminal
-  intended for tiling window managers making it my preferred choice. However,
-  it isn't being maintained anymore, so I'm reluctant to recommend it.
+  personally used that work for me. `gnome-terminal` is a [VTE-based] terminal
+  that is designed for the GNOME desktop environment, but it works well enough
+  here (assuming you don't mind all its dependencies). It does pretty much
+  everything you'd expect from a modern terminal. `xfce4-terminal` is another
+  VTE-based terminal but this time intended for the Xfce desktop environment.
+  `terminator` is yet another VTE-based terminal that isn't intended for any
+  particular desktop environment and includes plenty of features.
 
   Nowadays, GPU accelerated terminals are all the rage (because obviously you
   need to be able to see text streaming at 144 fps), though I should warn you
   that if your hardware doesn't have modern OpenGL support (e.g. VirtualBox),
   these may not work well. `alacritty` is the default for [Sway], written in
   Rust (if that matters to you), and is the officially sanctioned replacement
-  for `termite`. `kitty` is another GPU accelerated terminal that offers a lot
-  of flexibility with a variety of plugins. Finally, `cool-retro-term` is a fun
-  terminal that lets you time travel to the past when screen burn-in was a
-  thing and everything was monochrome.
+  for `termite` (my previous chosen terminal). `kitty` is another GPU
+  accelerated terminal that offers a lot of flexibility with a variety of
+  plugins. Finally, `cool-retro-term` is a fun terminal that lets you time
+  travel to the past when screen burn-in was a thing and everything was
+  monochrome.
 
+[`gnome-terminal`]: https://wiki.gnome.org/Apps/Terminal
 [`xfce4-terminal`]: https://docs.xfce.org/apps/terminal/start
-[`termite`]: https://wiki.archlinux.org/title/Termite
 [`terminator`]: https://wiki.archlinux.org/title/Terminator
 [`alacritty`]: https://wiki.archlinux.org/title/Alacritty
 [`kitty`]: https://wiki.archlinux.org/title/Kitty
