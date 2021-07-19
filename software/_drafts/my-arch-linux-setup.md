@@ -1,12 +1,12 @@
 ---
 ---
 
-I've been a big fan of [Arch Linux] for a long time now. Though it is a pain to
-set up, it offers a great opportunity to learn exactly how everything fits
-together in a Linux system. There's also that pleasant satisfaction when
+I've been a big fan of [Arch Linux] for a long time now. Though it is a lot of
+work to set up, it offers a great opportunity to learn exactly how everything
+fits together in a Linux system. There's also that pleasant satisfaction when
 everything is finally set up exactly the way I like it. In the interest of
 making this process easier for both myself and others, I've written down my
-personal guide to setting up Arch Linux. 
+personal guide to setting up Arch Linux.
 
 [Arch Linux]: https://archlinux.org/
 
@@ -17,10 +17,10 @@ personal guide to setting up Arch Linux.
 
 This guide is intended to be a companion to the official [installation guide]
 and not a replacement since I don't plan on covering every detail here nor will
-I include the specific commands you need to run. In general, the [ArchWiki] is
-an excellent resource and honestly one of the biggest strengths of Arch Linux
-so feel free to consult it at any point. It's even useful when you aren't
-running Arch.
+I include the specific commands you need to run. You should follow both guides
+side-by-side. In general, the [ArchWiki] is an excellent resource and honestly
+one of the biggest strengths of Arch Linux so feel free to consult it at any
+point. It's even useful when you aren't running Arch.
 
 [installation guide]: https://wiki.archlinux.org/title/Installation_guide
 [ArchWiki]: https://wiki.archlinux.org/
@@ -33,17 +33,18 @@ choices may be non-ideal for a physical machine, though I will still cover some
 things that aren't useful for a VM (full-disk encryption). Here are some of the
 key choices I made:
 
+| Boot process         | UEFI                                      |
+| Partitioning         | `/` (encrypted with [dm-crypt]), `/efi`   |
 | Boot loader          | [GRUB]                                    |
-| Full disk encryption | [dm-crypt], `/boot` is included           |
 | File system          | [btrfs]                                   |
 | Window manager       | [i3]                                      |
-| Swap                 | [Swap file]                               |
+| Swap                 | [Swap file], no hibernate                 |
 | Networking           | [systemd-networkd] and [systemd-resolved] |
 | Firewall             | [ufw]                                     |
 
 [VirtualBox]: https://www.virtualbox.org/
-[GRUB]: https://wiki.archlinux.org/title/GRUB
 [dm-crypt]: https://wiki.archlinux.org/title/Dm-crypt
+[GRUB]: https://wiki.archlinux.org/title/GRUB
 [btrfs]: https://wiki.archlinux.org/title/btrfs
 [i3]: https://wiki.archlinux.org/title/i3
 [Swap file]: https://wiki.archlinux.org/title/Swap#Swap_file
@@ -80,9 +81,8 @@ personal files (documents, datasets, videos, etc.).
 
 Finally, here are some less important options that I like to set.
 
-* Enable the shared clipboard. This won't actually work until we install the
-  [VirtualBox Guest Additions], but feel free to enable it early so you don't
-  forget.
+* Enable the shared clipboard. This won't work until we install the [VirtualBox
+  Guest Additions], but feel free to enable it early so you don't forget.
 * Set the amount of memory. Make sure not to exceed what your host system has
   available.
 * Set the boot order. Chances are that the default is perfectly fine, but I
@@ -120,11 +120,11 @@ up your actual installation. Note that you may want to do everything inside
 [`tmux`] so you can scrollback to previous output[^console] and copy/paste
 between multiple terminals.
 
-Start off with the first basic steps of:
+Start off with the first several steps:
 1. Set the keyboard layout if needed.
 1. Set the console font if desired (I like `Lat2-Terminus16` which is just
    [`terminus-font`]).
-1. Confirm you are running in UEFI mode.
+1. Confirm you are running in UEFI mode (unless you want to use BIOS instead).
 1. Confirm you have internet access.
 1. Enable NTP for the system clock.
 
@@ -153,16 +153,16 @@ to keep it simple, we will only have 2 partitions:
 
 If you want a separate [swap partition], then you'll need to make that now as
 well. Though swap partitions are the easiest way to get swap space, they also
-aren't very flexible since it's hard to move, merge, or expand a partition.
-Therefore, I will focus on setting up a [swap file] instead. Swap files are
-convenient to resize (or even delete entirely to free up space in a pinch).
-However, if you choose to run [btrfs] and wish to add more disks in the future,
-you may want to use a swap partition since
-[btrfs doesn't support swap files on filesystems with multiple disks](https://btrfs.wiki.kernel.org/index.php/FAQ#Does_Btrfs_support_swap_files.3F).
+aren't very flexible since it's hard to move, merge, or expand a partition
+(unless you use [LVM]). The alternative is a [swap file] which is convenient to
+resize (or even delete entirely to free up space in a pinch). However, their
+setup is more complicated, and if you choose to run [btrfs] and wish to add
+more disks in the future, [btrfs doesn't support swap files on filesystems with multiple disks](https://btrfs.wiki.kernel.org/index.php/FAQ#Does_Btrfs_support_swap_files.3F).
 Note that for a VM, it's probably easier to set up a separate virtual drive
-solely for a swap partition.
+solely for a swap partition since you can resize the drive quite easily.
 
 [swap partition]: https://wiki.archlinux.org/title/swap#Swap_partition
+[LVM]: https://wiki.archlinux.org/title/LVM
 
 #### Encrypting /boot
 
@@ -192,9 +192,9 @@ separate boot partition.
 #### Running the Partitioning Tool
 
 There are many tools that can be used to partition the drive so choose whatever
-suits you (I personally just use `fdisk`). The ArchWiki recommends making the
-EFI system partition 260 MB which I believe comes from the
-[minimum FAT32 partition size on certain drives](https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/configure-uefigpt-based-hard-drive-partitions#system-partition).
+suits you (if you use `fdisk`, be sure to switch to GPT). The ArchWiki
+recommends making the EFI system partition 260 MB which I believe comes from
+the [minimum FAT32 partition size on certain drives](https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/configure-uefigpt-based-hard-drive-partitions#system-partition).
 Use the remainder of the disk as the second partition which will be storing the
 root directory.
 
@@ -205,7 +205,9 @@ main reason to do this is to prevent someone from accessing your data if your
 hard drive is stolen. However, you will need to type in the encryption password
 every time you boot the system. For convenience, I usually make the encryption
 password the same as my login password which is secure enough for me (note that
-by default nothing will keep the passwords in sync).
+by default nothing will keep the passwords in sync). You can also make the
+system auto-login after booting it so you only have to type in the password
+once.
 
 Now the complicated part. Basically, you want to follow [these instructions](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Encrypted_boot_partition_(GRUB))
 when you encrypt the root partition to ensure [GRUB] can decrypt it. However,
@@ -231,15 +233,15 @@ bad reputation for losing data which is pretty much the worst possible thing a
 file system could do. This is especially ironic since it is a [copy-on-write]
 file system. Usually such file systems are considered safer from corruptions
 since their operations are naturally atomic due to simply never overwriting
-previous data/metadata. I believe most issues were from people using btrfs with
-a RAID5/6 setup [which even now isn't supported](https://btrfs.wiki.kernel.org/index.php/RAID56),
+previous data/metadata. I believe a lot of the issues were from people using
+btrfs with a RAID5/6 setup [which even now isn't supported](https://btrfs.wiki.kernel.org/index.php/RAID56),
 but there are definitely enough horror stories to warrant caution. Anyway, I
 don't have much experience with btrfs, but it has a lot of nice features and
 enough people saying good things about it (it's now the [default for Fedora](https://fedoraproject.org/wiki/Changes/BtrfsByDefault))
 for me to justify using it. Still, if its reputation scares you off, feel free
 to use a different file system (e.g. [ZFS] is another CoW file system that is
 largely considered to be better in every way except it is optimized for
-enterprise usage).
+enterprise usage and has a unfriendly licensing).
 
 [copy-on-write]: https://en.wikipedia.org/wiki/Copy-on-write
 [ZFS]: https://wiki.archlinux.org/title/ZFS
@@ -262,11 +264,11 @@ hit most of the time. Still, if disk space is more important to you, the
 [performance penalty](https://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git/commit/?h=next&id=5c1aab1dd5445ed8bdcdbb575abc1b0d7ee5b2e7)
 is likely worth it (e.g. our VM with only 32 GB of space). If performance is
 still important, you could choose the LZO algorithm since it is the fastest,
-but at that point, you should probably just not enable compression at all. If
-you do decide to enable compression, you should mount with the option
-`compress=zstd:1` since the ZSTD algorithm seems better than the default ZLIB,
-and level 1 already provides significant compression so more isn't worth the
-additional overhead.
+but at that point, you should probably just not enable compression at all (or
+even avoid btrfs since it is slower than ext4). If you do decide to enable
+compression, you should mount with the option `compress=zstd:1` since the ZSTD
+algorithm seems better than the default ZLIB, and level 1 already provides
+significant compression so more isn't worth the additional overhead.
 
 Next, you should mount with the [`noatime`] option. In general, this is a
 useful optimization for any file system when you don't need access times for
@@ -291,7 +293,7 @@ is one of the main advantages of a [copy-on-write] file system.
 [subvolumes]: https://btrfs.wiki.kernel.org/index.php/SysadminGuide#Subvolumes
 [snapshot]: https://btrfs.wiki.kernel.org/index.php/SysadminGuide#Snapshots
 
-To start off, there are a [few basic approaches](https://btrfs.wiki.kernel.org/index.php/SysadminGuide#Layout)
+To start off, here are a [few basic approaches](https://btrfs.wiki.kernel.org/index.php/SysadminGuide#Layout)
 to layout your btrfs subvolumes. Feel free to come up with your own, but here's
 the layout of my subvolumes and how they are mounted into the system.
 Subvolumes are prefixed with `@` and normal directories are suffixed with `/`.
@@ -362,11 +364,12 @@ helpful even without configuration:
 * [`fish`]
   * Though chances are you are already familiar with `bash`, `fish` is a nice
     shell that includes advance features (syntax highlighting,
-    auto-complete[^fish]) without requiring any configuration. However, it is
+    auto-complete) without requiring any configuration. However, it is
     not POSIX compliant so scripts that don't have a [shebang] are likely to
-    break. If you want something closer to `bash`, [`zsh`] is a good choice,
-    but it requires a bit of configuration before it gets to the same level as
-    `fish`.
+    break, and you'll probably want to include `python` so it can parse man
+    pages for more auto-completions. If you want something closer to `bash`,
+    [`zsh`] is a good choice, but it requires a bit of configuration before it
+    gets to the same level as `fish`.
 
 [`btrfs-progs`]: https://wiki.archlinux.org/title/btrfs#Preparation
 [`neovim`]: https://wiki.archlinux.org/title/Neovim
@@ -374,7 +377,6 @@ helpful even without configuration:
 [`fish`]: https://wiki.archlinux.org/title/fish
 [shebang]: https://en.wikipedia.org/wiki/Shebang_(Unix)
 [`zsh`]: https://wiki.archlinux.org/title/zsh
-[^fish]: Note that `fish` usually would parse man pages to generate auto completions for commands it doesn't support out of the box, but that requires installing `python` so consider installing that as well.
 
 Next, you should run `genfstab` as indicated in the installation guide.
 Afterwards, you will want to modify the `/etc/fstab` file to remove the
@@ -434,10 +436,10 @@ The last thing we need to do before we can boot into our system is set up a
 boot loader. Usually we'd have multiple choices here, but since we need a
 bootloader that can both decrypt a LUKS partition and read btrfs, [GRUB] is our
 only option. If you are not encrypting your `/boot`, then you can go with a
-boot loader that just supports btrfs like [rEFInd]. If you aren't using that
-either, then [`systemd-boot`] is simple, works pretty well, and is already
-installed by default. The rest of this guide will assume you went with GRUB,
-but I would recommend going with something simpler if you can.
+boot loader that supports btrfs like [rEFInd]. If you aren't using that either,
+then [`systemd-boot`] is simple, works pretty well, and is already installed by
+default. The rest of this guide will assume you went with GRUB, but I would
+recommend going with something simpler if you can.
 
 [rEFInd]: https://wiki.archlinux.org/title/REFInd
 [`systemd-boot`]: https://wiki.archlinux.org/title/Systemd-boot
@@ -614,8 +616,8 @@ worries you, then you should skip this step.
 
 As you've likely figured out by now, `pacman` works just fine out of the box.
 However, there are a few things you'd probably like to set up before you start
-installing more things. First off, here are a few options in the `pacman.conf`
-file you may be interested in:
+installing more things. Here are a few options in the `pacman.conf` file you
+may be interested in:
 
 * `Color`: Enables color output in the terminal.
 * `ParallelDownloads`: Download multiple packages at the same time. The default
@@ -626,17 +628,17 @@ file you may be interested in:
 which allow you to run arbitrary commands before/after `pacman` does anything.
 You could create a hook to take a btrfs snapshot right before anything happens
 (be sure to give it an alphabetically early name to ensure this) which makes it
-easy to revert a bad upgrade. Note that it might be a bit finnicky since the
-snapshot will likely include `pacman`'s lock file. Check out `man alpm-hooks`
-for details on the syntax of the hook files. If you don't feel like doing all
-this manually, consider using [Snapper] and follow [these instructions](https://wiki.archlinux.org/title/Snapper#Wrapping_pacman_transactions_in_snapshots).
+easy to revert a bad upgrade. Note that restoring the snapshot might be a bit
+finicky since the snapshot will include `pacman`'s lock file. Check out `man
+alpm-hooks` for details on the syntax of the hook files. If you don't feel like
+doing all this manually, consider using [Snapper] and follow [these instructions](https://wiki.archlinux.org/title/Snapper#Wrapping_pacman_transactions_in_snapshots).
 
 [Snapper]: https://wiki.archlinux.org/title/Snapper
 
 #### Reflector
 
 [Reflector] is a tool that can update the `pacman` mirror list with the best
-mirrors based on how up-to-date they are and their speed. Though the default
+mirrors based on how fresh they are and their speed. Though the default
 `/etc/pacman.d/mirrorlist` file should work pretty well since [it was already generated via Reflector](https://wiki.archlinux.org/title/Installation_guide#Select_the_mirrors),
 mirrors do change over time and it's convenient to set it up while you still
 have the context.
@@ -706,32 +708,32 @@ you will get an "Invalid argument" error from `chattr +C` if you don't remove
 it first (likely a bug).
 
 With the empty swap file created, you need to decide how big you want it.
-Usually you'd match the amount of RAM just in case you do decide to set up
-hibernation, but for a VM with limited disk space, that might be too much
-space. I'd stick with just a few GiB (maybe even just 1 GiB). Feel free to make
-it larger since it's pretty easy to change the size later.
+Usually you'd want to match the amount of RAM just in case you do decide to set
+up hibernation, but since it's easy to resize a swap file later, you can make
+it as small as you wish.
 
 ### AUR
 
 The [Arch User Repository] is a repository of PKGBUILD scripts that is
 maintained by various Arch Linux users. Unlike with packages that come from the
 [official repositories], these PKGBUILD scripts are not maintained by trusted
-package maintainers meaning you *cannot* blindly trust anything from the AUR.
-Despite this, the AUR is still very useful for packages that are not popular
-enough to be in the official repositories, so there are many users who
-regularly use packages built from the AUR. To this end, there are many [AUR
-helpers] that can make installing packages from the AUR convenient since
-usually you'd need to manually download the PKGBUILD file and any dependencies
-it needs, build the package, and then install the package. Doing this once in a
-while isn't a big deal, but having to do it every time the package updates is a
-pain.
+package maintainers meaning anyone can upload a package to the AUR and you
+*must not* blindly trust anything from the AUR. Despite this, the AUR is still
+very useful for packages that are not popular enough to be in the official
+repositories, so there are many users who regularly use packages built from the
+AUR. To this end, there are many [AUR helpers] that can make installing
+packages from the AUR convenient since usually you'd need to manually download
+the PKGBUILD file and any dependencies it needs, build the package, and then
+install the package. Doing this once in a while isn't a big deal, but having to
+do it every time the package updates is a pain.
 
 [Arch User Repository]: https://wiki.archlinux.org/title/Arch_User_Repository
 [official repositories]: https://wiki.archlinux.org/title/Official_repositories
 [AUR helpers]: https://wiki.archlinux.org/title/AUR_helpers
 
-Of course, AUR helpers are not in the official repositories either, so to
-install one, you'll have to manually build it. Follow [these instructions](https://wiki.archlinux.org/title/Arch_User_Repository#Installing_and_upgrading_packages)
+Of course, AUR helpers are not in the official repositories since they have the
+exact same risks as anything else from the AUR. To install one, you'll have to
+manually build it. Follow [these instructions](https://wiki.archlinux.org/title/Arch_User_Repository#Installing_and_upgrading_packages)
 carefully to install your AUR helper of choice. There are many to choose from,
 but nowadays I usually use [`yay`] or [`paru`]. Note that even if you use an
 AUR helper, you should always strive to check the PKGBUILD and other files to
@@ -746,10 +748,10 @@ easier by showing you the diff every time the package updates.
 If you are installing in VirtualBox, you should install the [VirtualBox Guest
 Additions] before you start trying to install any desktop environment or window
 manager. This will provide the correct graphics drivers, without which you may
-run into future issues. Be sure to enable the systemd service so the kernel
-modules get started correctly. For additional VirtualBox integration (shared
-clipboard, seamless mode), ensure that `VBoxClient-all` is set up to run upon
-login into the desktop.
+run into issues. Be sure to enable the systemd service so the kernel modules
+get started correctly. For additional VirtualBox integration (shared clipboard,
+seamless mode), ensure that `VBoxClient-all` is set up to run upon login into
+the desktop.
 
 ### Window Manager
 
@@ -820,7 +822,7 @@ functionality (and some of them even conflict with each other).
   running arbitrary commands. `i3status` prides itself on being very fast and
   honestly comes pretty close to having everything I want. However, having
   clickable blocks is nice so I prefer using `i3blocks`. There are also other
-  alternatives too that provide similar functionality so explore around.
+  alternatives that provide similar functionality so explore around.
 
 [`i3status`]: https://i3wm.org/docs/i3status.html
 [`i3blocks`]: https://github.com/vivien/i3blocks
@@ -949,11 +951,15 @@ access to a terminal).
   bitmap fonts are falling out of favor so you may have to struggle to get them
   to work.
 
+  Regardless of which font you pick, you may need to do some [font
+  configuration] to get things working properly.
+
 [`noto-fonts`]: https://www.google.com/get/noto/
 [`ttf-dejavu`]: https://dejavu-fonts.github.io/
 [`ttf-hack`]: https://sourcefoundry.org/hack/
 [`terminus-font`]: http://terminus-font.sourceforge.net/
 [`gohufont`]: https://font.gohu.org/
+[font configuration]: https://wiki.archlinux.org/title/font_configuration
 
 * Notification server: [`dunst`]
 
