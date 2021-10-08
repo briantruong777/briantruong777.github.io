@@ -108,17 +108,17 @@ Finally, here are some less important options that I like to set.
   personal taste, but I prefer not having any VirtualBox UI when in full-screen
   mode.
 
-Add the installation image to the VM and then boot it.
+Finally, add the installation image to the VM.
 
 [VirtualBox Guest Additions]: https://wiki.archlinux.org/title/VirtualBox/Install_Arch_Linux_as_a_guest#Install_the_Guest_Additions
 [Physical Address Extension]: https://en.wikipedia.org/wiki/Physical_Address_Extension
 
 ### Initial Steps
 
-You are now inside a live installation of Arch Linux which you will use to set
-up your actual installation. Note that you may want to do everything inside
-[`tmux`] so you can scrollback to previous output[^console] and copy/paste
-between multiple terminals.
+Boot the Arch Linux live installation which you will use to set up your actual
+installation. Note that you may want to do everything inside [`tmux`] so you
+can scrollback to previous output[^console] and copy/paste between multiple
+terminals.
 
 Start off with the first several steps:
 1. Set the keyboard layout if needed.
@@ -179,7 +179,7 @@ directly modifying the kernel. However, this won't stop a particularly
 determined attacker since they can modify the boot loader instead which will
 give them access to your system after you decrypt it[^maid].
 
-[^maid]: This attack vector is known as the [Evil Maid Attack]. The correct way to prevent this is to use [Secure Boot], but in my opinion, that is overkill unless you worried about an intelligence agency coming for you.
+[^maid]: This attack vector is known as the [Evil Maid Attack]. The correct way to prevent this is to use [Secure Boot] and locking down your BIOS, but in my opinion, that is overkill unless you worried about an intelligence agency coming for you.
 [Evil Maid Attack]: https://www.schneier.com/blog/archives/2009/10/evil_maid_attac.html
 [Secure Boot]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot
 
@@ -241,7 +241,7 @@ enough people saying good things about it (it's now the [default for Fedora](htt
 for me to justify using it. Still, if its reputation scares you off, feel free
 to use a different file system (e.g. [ZFS] is another CoW file system that is
 largely considered to be better in every way except it is optimized for
-enterprise usage and has a unfriendly licensing).
+enterprise usage and has unfriendly licensing).
 
 [copy-on-write]: https://en.wikipedia.org/wiki/Copy-on-write
 [ZFS]: https://wiki.archlinux.org/title/ZFS
@@ -317,14 +317,14 @@ top-level      -> /.btrfs
 The `/.btrfs` mount point exists to make it convenient to access all the other
 subvolumes/snapshots. `@home` and `@root` are separate subvolumes since most of
 the time you'd want to restore them separately from each other (e.g. I deleted
-my documents vs I need to downgrade a package). The `swap` subvolume is for
+my documents vs I need to downgrade a package). The `@swap` subvolume is for
 storing a [swap file] since it requires that the containing subvolume is not
 snapshotted or compressed.
 
 To actually create this layout, you should first mount the btrfs top-level
-somewhere so you can `cd` in and start creating the subvolume and directory
-structure. To continue with the rest of the installation, you should mount
-everything we've set up:
+subvolume somewhere so you can `cd` in and start creating the subvolume and
+directory structure. To continue with the rest of the installation, you should
+mount everything we've set up:
 
 * `@root` subvolume at `/mnt`
 * `@home` subvolume at `/mnt/home`
@@ -345,7 +345,7 @@ helpful even without configuration:
   * Provides user-space tools for working with btrfs. This package is basically
     a necessity because when you generate the initramfs via `mkinitcpio`, it
     will be unable to run the fsck build hook without this.
-* [`man-db` and `man-pages`](https://wiki.archlinux.org/title/Man_page)
+* [`man-db` and `man-pages`]
   * The ubiquitous `man` command is the standard way to read documentation on
     various commands, programs, system calls, etc. Though most of these can be
     found online nowadays, nothing beats the convenience of having them right
@@ -363,15 +363,16 @@ helpful even without configuration:
     between them.
 * [`fish`]
   * Though chances are you are already familiar with `bash`, `fish` is a nice
-    shell that includes advance features (syntax highlighting,
-    auto-complete) without requiring any configuration. However, it is
-    not POSIX compliant so scripts that don't have a [shebang] are likely to
-    break, and you'll probably want to include `python` so it can parse man
-    pages for more auto-completions. If you want something closer to `bash`,
-    [`zsh`] is a good choice, but it requires a bit of configuration before it
-    gets to the same level as `fish`.
+    shell that includes advance features (syntax highlighting, auto-complete)
+    without requiring any configuration. However, it is not POSIX compliant so
+    scripts that don't have a [shebang] are likely to break. Also, you'll
+    probably want to include `python` so it can parse man pages for more
+    auto-completions. If you want something closer to `bash`, [`zsh`] is a good
+    choice, but it requires a bit of configuration before it gets to the same
+    level as `fish`.
 
 [`btrfs-progs`]: https://wiki.archlinux.org/title/btrfs#Preparation
+[`man-db` and `man-pages`]: https://wiki.archlinux.org/title/Man_page
 [`neovim`]: https://wiki.archlinux.org/title/Neovim
 [`tmux`]: https://wiki.archlinux.org/title/Tmux
 [`fish`]: https://wiki.archlinux.org/title/fish
@@ -382,8 +383,8 @@ Next, you should run `genfstab` as indicated in the installation guide.
 Afterwards, you will want to modify the `/etc/fstab` file to remove the
 `subvolid=` mount option. This way, you can restore from a snapshot by a simple
 `mv` of the `@root` subvolume to `@root_old` and then taking a snapshot of the
-desired snapshot and putting it at `/@root`. If you leave the `subvolid=` in,
-the mounting will fail since the subvolume ID will be different.
+desired snapshot and naming it `@root`. If you leave the `subvolid=` in, the
+mounting will fail since the subvolume ID will be different.
 
 After you've run `arch-chroot`, you will now be acting as if you are inside the
 system. You should set up the following next:
@@ -500,15 +501,15 @@ accidentally modifying it later. Taking a snapshot is very easy:
 
 ```
 # cd /.btrfs
-# btrfs subvolume snapshot -r @root snapshot/root/$(date -Iseconds)
+# btrfs subvolume snapshot -r @root snapshot/root/@$(date -Iseconds)
 ```
 
 Restore from a snapshot by replacing the old subvolume with a new read-write
 snapshot of your chosen snapshot. Since we are mounting our subvolumes by path,
-you need to ensure the path of the restored snapshot is exactly the same. If
-you are replacing the root directory, you should reboot to get the new snapshot
-mounted. For the home directory, you could maybe get away with remounting it
-live, but it's probably safer to just reboot.
+you need to ensure the path of the restored snapshot is exactly the same as the
+original subvolume. If you are replacing the root directory, you should reboot
+to get the new snapshot mounted. For the home directory, you could maybe get
+away with remounting it live, but it's probably safer to just reboot.
 
 After you've confirmed that everything is good, you can delete the old
 subvolume (feel free to keep a snapshot of it). **Do not delete the old root
@@ -519,7 +520,7 @@ your entire root directory and be unable to run any programs including the
 ```
 # cd /.btrfs
 # mv @root @root_old
-# btrfs subvolume snapshot snapshot/root/chosen_snapshot @root
+# btrfs subvolume snapshot snapshot/root/@chosen_snapshot @root
 # reboot
 # btrfs subvolume delete @root_old
 ```
@@ -569,10 +570,10 @@ config to allow members of the `wheel` group access to `sudo`.
 ```
 
 I also recommend disabling the password input timeout since it is quite common
-for a long-running script to run `sudo` and fail if you don't happen to be
-around to type in the password. This way, you won't have to restart the entire
-script. Other ways of dealing with this (extending `sudo` timeout or not
-requiring a password) are insecure.
+for a long-running script that runs `sudo` to timeout if you don't happen to be
+around to type in the password. With this option enabled, you won't have to
+restart the entire script. Other ways of dealing with this (extending `sudo`
+timeout or not requiring a password) are insecure.
 
 ```
 Defaults passwd_timeout=0
@@ -620,18 +621,19 @@ installing more things. Here are a few options in the `pacman.conf` file you
 may be interested in:
 
 * `Color`: Enables color output in the terminal.
-* `ParallelDownloads`: Download multiple packages at the same time. The default
-  of 5 is probably fine unless it isn't enough to fully saturate your download
-  bandwidth.
+* `ParallelDownloads`: Download multiple packages at the same time. The
+  commented-out default of 5 is probably fine unless it isn't enough to fully
+  saturate your download bandwidth.
 
 `pacman` supports [pre/post-transaction hooks](https://wiki.archlinux.org/title/Pacman#Hooks)
 which allow you to run arbitrary commands before/after `pacman` does anything.
 You could create a hook to take a btrfs snapshot right before anything happens
 (be sure to give it an alphabetically early name to ensure this) which makes it
-easy to revert a bad upgrade. Note that restoring the snapshot might be a bit
-finicky since the snapshot will include `pacman`'s lock file. Check out `man
-alpm-hooks` for details on the syntax of the hook files. If you don't feel like
-doing all this manually, consider using [Snapper] and follow [these instructions](https://wiki.archlinux.org/title/Snapper#Wrapping_pacman_transactions_in_snapshots).
+easy to revert a bad upgrade. Note that the snapshot might be a bit finicky
+since it will include `pacman`'s lock file which you'll need to manually
+delete. Check out `man alpm-hooks` for details on the syntax of the hook files.
+If you don't feel like doing all this manually, consider using [Snapper] and
+follow [these instructions](https://wiki.archlinux.org/title/Snapper#Wrapping_pacman_transactions_in_snapshots).
 
 [Snapper]: https://wiki.archlinux.org/title/Snapper
 
@@ -687,12 +689,12 @@ hibernation might fail if there is too much RAM to save.
 [swap]: https://wiki.archlinux.org/title/Swap
 [hibernation]: https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate#Hibernation
 
-I'd recommend setting up a [swap file] since it is way more convenient than a
+If you want maximum flexibility, a [swap file] is way more convenient than a
 swap partition (plus it'll be annoying to make space for a new partition now
 that we've installed everything). Note that if you are using btrfs, you'll need
 to follow [these instructions](https://wiki.archlinux.org/title/Btrfs#Swap_file)
 and use the separate `@swap` subvolume to ensure it'll work correctly. Here's
-the commands to set up the swap file in btrfs.
+the commands to set up the swap file in btrfs:
 
 ```
 # cd /swap
@@ -775,7 +777,8 @@ environment.
 
 Of course, there are more than just these 4, but these are the ones that I've
 tried and are relatively popular. My personal choice would be Xfce since it is
-lightweight and not too ugly.
+lightweight and not too ugly, but GNOME and KDE are definitely more fully
+featured.
 
 However, nowadays I use [i3] instead since I find its window tiling scheme
 makes a lot of sense and it still supports floating windows. It does take a
@@ -809,23 +812,23 @@ functionality (and some of them even conflict with each other).
 
   `i3-wm` is the normal i3 window manager and technically the only thing you
   need to install to start using i3. `i3-gaps` is a fork that puts aesthetic
-  gaps between the windows. Of course, this is technically a waste of space,
-  but it does look nice.
+  gaps between the windows. Of course, this is literally a waste of space, but
+  it does look nice.
 
 [`i3-gaps`]: https://github.com/Airblader/i3
 
-* Status text: [`i3status`], [`i3blocks`]
+* Status text: [`i3status`], [`i3blocks`], [`i3status-rust`]
 
   `i3status` generates the status line at the bottom of the screen that
-  presents the time, current network status, battery, etc. `i3blocks` does the
-  same, but supports more functionality like supporting click events and
-  running arbitrary commands. `i3status` prides itself on being very fast and
-  honestly comes pretty close to having everything I want. However, having
-  clickable blocks is nice so I prefer using `i3blocks`. There are also other
-  alternatives that provide similar functionality so explore around.
+  presents the time, current network status, battery, etc. `i3blocks` and
+  `i3status-rust` do the same, but support more functionality like click events
+  and running arbitrary commands. `i3status` prides itself on being very fast
+  and honestly comes pretty close to having everything I want. However, I can't
+  deny the other options look nicer so I usually go with `i3status-rust`.
 
 [`i3status`]: https://i3wm.org/docs/i3status.html
 [`i3blocks`]: https://github.com/vivien/i3blocks
+[`i3status-rust`]: https://github.com/greshake/i3status-rust
 
 * Screen locker: [`i3lock`], [`i3lock-color`], [`xscreensaver`], [`xsecurelock`]
 
