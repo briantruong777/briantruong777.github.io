@@ -1061,6 +1061,18 @@ carefully otherwise you may lock yourself out.
 
 [`nftables`]: https://wiki.archlinux.org/title/nftables
 
+### Hardware
+
+If you are not installing in a virtual machine, you'll likely need to look at
+these additional guides to set up your specific hardware:
+
+* Graphics card
+  * [NVIDIA](https://wiki.archlinux.org/title/NVIDIA)
+  * [AMD](https://wiki.archlinux.org/title/AMDGPU)
+  * [Intel](https://wiki.archlinux.org/title/Intel_graphics)
+* [Audio](https://wiki.archlinux.org/title/sound_system)
+* [Laptop](https://wiki.archlinux.org/title/laptop)
+
 ## Regular Maintenance
 
 Congratulations! Your Arch Linux system is fully set up and ready for use
