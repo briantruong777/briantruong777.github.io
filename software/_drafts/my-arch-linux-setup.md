@@ -18,9 +18,12 @@ personal guide to setting up Arch Linux.
 This guide is intended to be a companion to the official [installation guide]
 and not a replacement since I don't plan on covering every detail here nor will
 I include the specific commands you need to run. You should follow both guides
-side-by-side. In general, the [ArchWiki] is an excellent resource and honestly
-one of the biggest strengths of Arch Linux so feel free to consult it at any
-point. It's even useful when you aren't running Arch.
+side-by-side and follow any linked documentation without prompting from me. In
+general, the [ArchWiki] is an excellent resource and honestly one of the
+biggest strengths of Arch Linux so feel free to consult it at any point. It's
+even useful when you aren't running Arch. In fact, I seriously recommend
+abandoning this guide and just following the installation guide by itself, but
+chances are that isn't acceptable for you otherwise you wouldn't be here.
 
 [installation guide]: https://wiki.archlinux.org/title/Installation_guide
 [ArchWiki]: https://wiki.archlinux.org/
@@ -38,7 +41,7 @@ key choices I made:
 | Boot loader          | [GRUB]                                    |
 | File system          | [btrfs]                                   |
 | Window manager       | [i3]                                      |
-| Swap                 | [Swap file], no hibernate                 |
+| Swap                 | [Swap file] or [swap partition]           |
 | Networking           | [systemd-networkd] and [systemd-resolved] |
 | Firewall             | [ufw]                                     |
 
@@ -54,8 +57,7 @@ key choices I made:
 
 ## Pre-installation
 
-To start off, [download an installation image](https://archlinux.org/download/)
-and then boot it up.
+To start off, [download an installation image](https://archlinux.org/download/).
 
 ### VirtualBox Guest
 
@@ -141,7 +143,7 @@ First, using [GPT] is recommended over [MBR] for booting in UEFI mode since it
 is more flexible and better supported by motherboards and operating systems
 implementing UEFI[^mbr]. Second, UEFI requires an [EFI system partition] since
 that is where UEFI will look for boot loaders to run. Given that we are trying
-to keep it simple, we will only have 2 partitions:
+to keep it simple, we will have 2 main partitions:
 
 1. EFI system partition
 1. Encrypted root directory partition
@@ -151,13 +153,23 @@ to keep it simple, we will only have 2 partitions:
 [^mbr]: The ArchWiki's entry on [partitioning](https://wiki.archlinux.org/title/Partitioning#Choosing_between_GPT_and_MBR) describes these reasons in more detail, but in general, there's little reason to use MBR unless you are stuck with legacy hardware.
 [EFI system partition]: https://en.wikipedia.org/wiki/EFI_system_partition
 
-If you want a separate [swap partition], then you'll need to make that now as
-well. Though swap partitions are the easiest way to get swap space, they also
-aren't very flexible since it's hard to move, merge, or expand a partition
-(unless you use [LVM]). The alternative is a [swap file] which is convenient to
-resize (or even delete entirely to free up space in a pinch). However, their
-setup is more complicated, and if you choose to run [btrfs] and wish to add
-more disks in the future, [btrfs doesn't support swap files on filesystems with multiple disks](https://btrfs.wiki.kernel.org/index.php/FAQ#Does_Btrfs_support_swap_files.3F).
+Next, you'll need to decide if you want a [swap partition] or a [swap file] (or
+none in which case you can skip this). Though swap partitions are the easiest
+way to get swap space, they also aren't very flexible since it's harder to
+move, shrink, or expand a partition (unless you use [LVM]), and you'll need to
+set up encryption for the swap partition separately. In contrast, swap files
+can be dealt with just like any other file and will naturally be encrypted if
+they are stored on an encrypted partition. However, their setup is more
+complicated, and if you choose to run [btrfs] and wish to add more disks in the
+future, [btrfs doesn't support swap files on filesystems with multiple disks](https://btrfs.wiki.kernel.org/index.php/FAQ#Does_Btrfs_support_swap_files.3F).
+
+If you want a swap file, then you don't need to do anything else with your
+partitioning. Otherwise, you'll need to add a swap partition now. I'd recommend
+putting it after your root directory partition so that you can expand/shrink it
+by shrinking/expanding your root directory partition and then moving the swap
+partition. Otherwise, you'll have to move your root directory partition which
+is a huge pain and much riskier.
+
 Note that for a VM, it's probably easier to set up a separate virtual drive
 solely for a swap partition since you can resize the drive quite easily.
 
@@ -218,15 +230,20 @@ instructions fully before taking any steps. Note that the last steps of the
 instructions involve setting up your initramfs and GRUB which we will do later
 in this guide so hold onto those steps.
 
+If you decided to go with a separate swap partition, you'll also need to
+encrypt that as well. If you want the kernel to resume successfully from it,
+you'll also need to configure the swap partition to be decrypted. See [these instructions](https://wiki.archlinux.org/title/Dm-crypt/Swap_encryption).
+
 ### Format Partitions
 
 Next, you will need to format each partition with the correct file system.
-[The EFI system partition should be FAT32](https://wiki.archlinux.org/title/EFI_system_partition#Format_the_partition),
-but your root directory partition can be whatever you like. If you encrypted
-your root directory partition, ensure that you are formatting the unencrypted
-mount point (e.g. `/dev/mapper/cryptroot`) rather than the partition itself
-otherwise you will destroy the encryption. In this guide, we will be using
-[btrfs] since it supports snapshots and automatic compression.
+[The EFI system partition should be FAT32](https://wiki.archlinux.org/title/EFI_system_partition#Format_the_partition)
+and swap should be formated with `mkswap`, but your root directory partition
+can be whatever you like. If you encrypted your root directory partition,
+ensure that you are formatting the unencrypted mount point (e.g.
+`/dev/mapper/cryptroot`) rather than the partition itself otherwise you will
+destroy the encryption. In this guide, we will be using [btrfs] since it
+supports snapshots and automatic compression.
 
 Now before we get any further, I need to acknowledge that btrfs has a pretty
 bad reputation for losing data which is pretty much the worst possible thing a
@@ -319,7 +336,8 @@ subvolumes/snapshots. `@home` and `@root` are separate subvolumes since most of
 the time you'd want to restore them separately from each other (e.g. I deleted
 my documents vs I need to downgrade a package). The `@swap` subvolume is for
 storing a [swap file] since it requires that the containing subvolume is not
-snapshotted or compressed.
+snapshotted or compressed (obviously you can omit this if you don't want a swap
+file).
 
 To actually create this layout, you should first mount the btrfs top-level
 subvolume somewhere so you can `cd` in and start creating the subvolume and
@@ -379,12 +397,14 @@ helpful even without configuration:
 [shebang]: https://en.wikipedia.org/wiki/Shebang_(Unix)
 [`zsh`]: https://wiki.archlinux.org/title/zsh
 
-Next, you should run `genfstab` as indicated in the installation guide.
-Afterwards, you will want to modify the `/etc/fstab` file to remove the
-`subvolid=` mount option. This way, you can restore from a snapshot by a simple
-`mv` of the `@root` subvolume to `@root_old` and then taking a snapshot of the
-desired snapshot and naming it `@root`. If you leave the `subvolid=` in, the
-mounting will fail since the subvolume ID will be different.
+Next, you should run `genfstab` as indicated in the installation guide. You may
+want to first mount your swap partition and anything else you want in the final
+system so that they'll end up in the generated `/etc/fstab`. Afterwards, you
+will want to modify `/etc/fstab` to remove the `subvolid=` mount option for the
+btrfs partition. This way, you can restore from a snapshot by a simple `mv` of
+the `@root` subvolume to `@root_old` and then taking a snapshot of the desired
+snapshot and naming it `@root`. If you leave the `subvolid=` in, the mounting
+will fail since the subvolume ID will be different.
 
 After you've run `arch-chroot`, you will now be acting as if you are inside the
 system. You should set up the following next:
@@ -416,16 +436,16 @@ to explore other solutions.
 Though `pacstrap` already created an initramfs, it won't actually work for us
 since we need to decrypt our root directory partition when we boot. The main
 thing we need to do is update the [list of hooks](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_mkinitcpio).
-Unless you have multiple encrypted drives (or encrypted with a detached LUKS
-header), it should be fine to stick with the `encrypt` hook instead of
-`sd-encrypt`, but you will need to choose the latter if you do need those
-features. `sd-encrypt` will require you to switch out other hooks for their
-systemd equivalents.
+Unless you have multiple encrypted partitions (e.g. swap partition) or a
+detached LUKS header, it should be fine to stick with the `encrypt` hook
+instead of `sd-encrypt`, but you will need to choose the latter if you do need
+those features. `sd-encrypt` will require you to switch out other hooks for
+their systemd equivalents.
 
 I'd also highly recommend including a key file in the initramfs so it can
-unlock the root partition without you having to type in the password again. Be
-sure to keep the key file and the initramfs (including the fallback one) secure
-by setting the permissions so only the root user can read them.
+unlock the root and swap partition without you having to type in the password
+again. Be sure to keep the key file and the initramfs (including the fallback
+one) secure by setting the permissions so only the root user can read them.
 
 Don't forget to run `mkinitcpio -P` otherwise your system will still use the
 old initramfs and your changes won't take effect likely causing your system to
@@ -682,17 +702,26 @@ that often.
 Though you can probably get pretty far without any [swap] (especially if you
 have tons of memory), it's best to have some just in case you exhaust all your
 RAM. Otherwise, programs will get killed by the kernel and you'll be at higher
-risk of locking up your entire system. Also, if you wish to set up
-[hibernation], you'll need swap space at least as large as your RAM otherwise
-hibernation might fail if there is too much RAM to save.
+risk of locking up your entire system.
 
 [swap]: https://wiki.archlinux.org/title/Swap
+
+If you wish to set up [hibernation], setting your swap space too small may
+cause hibernation to fail if there is too much RAM to save. In practice, the
+kernel will do significant compression so there's a decent chance it'll fit
+even if your swap space is smaller than your RAM.
+
 [hibernation]: https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate#Hibernation
 
-If you want maximum flexibility, a [swap file] is way more convenient than a
-swap partition (plus it'll be annoying to make space for a new partition now
-that we've installed everything). Note that if you are using btrfs, you'll need
-to follow [these instructions](https://wiki.archlinux.org/title/Btrfs#Swap_file)
+#### Swap Partition
+
+If you want to use a [swap partition], hopefully you already created the
+partition. Then just follow [these instructions](https://wiki.archlinux.org/title/Swap#Swap_partition).
+
+#### Swap File
+
+If you want to use a [swap file], follow [these instructions](https://wiki.archlinux.org/title/Swap#Swap_file).
+Note that if you are using btrfs, you'll need to follow [these instructions](https://wiki.archlinux.org/title/Btrfs#Swap_file)
 and use the separate `@swap` subvolume to ensure it'll work correctly. Here's
 the commands to set up the swap file in btrfs:
 
@@ -709,10 +738,19 @@ flag that disables compression and we want compression disabled, but it seems
 you will get an "Invalid argument" error from `chattr +C` if you don't remove
 it first (likely a bug).
 
-With the empty swap file created, you need to decide how big you want it.
-Usually you'd want to match the amount of RAM just in case you do decide to set
-up hibernation, but since it's easy to resize a swap file later, you can make
-it as small as you wish.
+#### Hibernation
+
+Out of the box, you can use `systemctl suspend` to suspend to RAM (aka
+sleep/standby), but if you want to suspend to disk (aka hibernate), you'll need
+to set up [hibernation]. If you use a swap partition, it's pretty easy to get
+it set up since all you need to do is add the `resume` kernel parameter (see
+[these instructions](https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate#Required_kernel_parameters)).
+If you have an encrypted swap partition, be sure to point `resume` to the
+decrypted mount point or UUID.
+
+If you use a swap file, it'll be a bit more painful since you'll need to
+additionally provide the `resume_offset` kernel parameter which will indicate
+the offset in the disk that the file is at (see [these instructions](https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate#Hibernation_into_swap_file)).
 
 ### AUR
 
