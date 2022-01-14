@@ -6,12 +6,11 @@ One of my favorite video games as a child was [Logical Journey of the
 Zoombinis]. Since then, software has been a part of my life in some way or
 another. In high school, I joined our [FIRST Robotics] team which got me hooked
 onto the engineering side of software. That led me to [University of Illinois
-at Urbana–Champaign] where I graduated with a BS/MCS in Computer Science. I
-ended up being a TA for 3 different courses: Computer Architecture (CS 233),
-Systems Programming (CS 241), and Software Design Studio (CS 126). Other than
-those areas, I'm also interested in programming languages, compilers,
-algorithms, distributed systems, and networking. Nowadays, I work as a software
-engineer for [Google].
+at Urbana–Champaign] where I graduated with a BS/MCS in Computer Science. I was
+a TA for Computer Architecture, Systems Programming, and Software Design
+Studio. Other than those areas, I'm also interested in programming languages,
+compilers, algorithms, distributed systems, and networking. Nowadays, I work as
+a software engineer for [Google].
 
 [Logical Journey of the Zoombinis]: https://en.wikipedia.org/wiki/Logical_Journey_of_the_Zoombinis
 [Google]: https://www.google.com/
