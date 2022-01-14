@@ -20,6 +20,13 @@ These instructions are paraphrased from the [official documentation].
 [Ruby]: https://www.ruby-lang.org/
 [bundler]: https://bundler.io/
 
+Note that you will need the [specific Ruby version that GitHub Pages uses](https://pages.github.com/versions/)
+which may require something like [rbenv] and [ruby-build] if your system
+doesn't support that version.
+
+[rbenv]: https://github.com/rbenv/rbenv
+[ruby-build]: https://github.com/rbenv/ruby-build
+
 # Run Locally
 
 Serve the website locally with change watching, live reload, and include draft
