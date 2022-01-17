@@ -176,30 +176,31 @@ solely for a swap partition since you can resize the drive quite easily.
 [swap partition]: https://wiki.archlinux.org/title/swap#Swap_partition
 [LVM]: https://wiki.archlinux.org/title/LVM
 
-#### Encrypting /boot
+#### Storing `/boot` on Root Partition
 
-Note that in this guide, we will be keeping our kernel and initramfs (aka the
-`/boot` directory) in the encrypted root directory partition so that when we
-take a btrfs snapshot, it will encompass the entire system including the
-kernel. This is important because usually kernel modules are not installed
-under `/boot`, so if we kept the kernel in a separate partition, it would not
-be snapshotted and restored in sync with the kernel modules which will break
-things.
+In this guide, we will be keeping our kernel and initramfs (aka the `/boot`
+directory) in the root directory partition so that when we take a btrfs
+snapshot, it will encompass the entire system including the kernel. This is
+important because usually kernel modules are not installed under `/boot`, so if
+we kept the kernel in a separate partition, snapshots of the kernel would not
+be taken and restored in sync with the kernel modules which will break things.
 
-As a side effect, keeping our kernel encrypted will also stop an attacker from
-directly modifying the kernel. However, this won't stop a particularly
-determined attacker since they can modify the boot loader instead which will
-give them access to your system after you decrypt it[^maid].
+However, this will cause trouble if you want to encrypt your root partition
+since your boot loader will now need to decrypt the partition to get access to
+your kernel. Currently [GRUB] is the only boot loader that can unlock a LUKS
+partition. If you'd prefer using a different boot loader or generally don't
+want to deal with the hassle, then I'd recommend keeping `/boot` unencrypted by
+either storing it in the EFI system partition, making a separate boot
+partition, or just not encrypting your root partition.
 
-[^maid]: This attack vector is known as the [Evil Maid Attack]. The correct way to prevent this is to use [Secure Boot] and locking down your BIOS, but in my opinion, that is overkill unless you worried about an intelligence agency coming for you.
+Note that having the kernel encrypted can stop an attacker from directly
+modifying the kernel. However, this won't stop a particularly determined
+attacker since they can modify the boot loader instead which will give them
+access to your system after you decrypt it[^maid].
+
+[^maid]: This attack vector is known as the [Evil Maid Attack]. The correct way to prevent this is to use [Secure Boot] and locking down your BIOS, but in my opinion, that is overkill unless you are worried about an intelligence agency coming for you.
 [Evil Maid Attack]: https://www.schneier.com/blog/archives/2009/10/evil_maid_attac.html
 [Secure Boot]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot
-
-However, keeping `/boot` encrypted limits our choice of boot loader since
-currently only [GRUB] can unlock a LUKS partition. If the above advantages
-don't sound useful to you, then I'd highly recommend keeping `/boot`
-unencrypted by either keeping it in the EFI system partition or making a
-separate boot partition.
 
 #### Running the Partitioning Tool
 
@@ -212,14 +213,14 @@ root directory.
 
 ### Disk Encryption
 
-We will be using [dm-crypt] to encrypt the entire root directory partition. The
-main reason to do this is to prevent someone from accessing your data if your
-hard drive is stolen. However, you will need to type in the encryption password
-every time you boot the system. For convenience, I usually make the encryption
-password the same as my login password which is secure enough for me (note that
-by default nothing will keep the passwords in sync). You can also make the
-system auto-login after booting it so you only have to type in the password
-once.
+Though I don't always do this, this guide will use [dm-crypt] to encrypt the
+entire root directory partition. This does cause some pain (e.g. must use
+[GRUB] if also encrypting `/boot`, requires password on boot, harder to
+configure), but it's really the only way to ensure all your data is safe if
+your hard drive is stolen or directly accessed. Otherwise, if you only encrypt
+your `/home` partition, it's very easy for personal data to get leaked in
+logs/caches or you may accidentally put personal data in an unencrypted
+partition.
 
 Now the complicated part. Basically, you want to follow [these instructions](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Encrypted_boot_partition_(GRUB))
 when you encrypt the root partition to ensure [GRUB] can decrypt it. However,
@@ -227,8 +228,8 @@ those instructions also include setting up LVM when we just want to set up a
 simple partition encryption like in [these instructions](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#LUKS_on_a_partition).
 You'll need to follow some mixture of the two, so be sure to read both
 instructions fully before taking any steps. Note that the last steps of the
-instructions involve setting up your initramfs and GRUB which we will do later
-in this guide so hold onto those steps.
+instructions involve setting up your initramfs and boot loader which we will do
+later in this guide so hold onto those steps.
 
 If you decided to go with a separate swap partition, you'll also need to
 encrypt that as well. If you want the kernel to resume successfully from it,
@@ -240,7 +241,7 @@ Next, you will need to format each partition with the correct file system.
 [The EFI system partition should be FAT32](https://wiki.archlinux.org/title/EFI_system_partition#Format_the_partition)
 and swap should be formated with `mkswap`, but your root directory partition
 can be whatever you like. If you encrypted your root directory partition,
-ensure that you are formatting the unencrypted mount point (e.g.
+ensure that you are formatting the decrypted mount point (e.g.
 `/dev/mapper/cryptroot`) rather than the partition itself otherwise you will
 destroy the encryption. In this guide, we will be using [btrfs] since it
 supports snapshots and automatic compression.
@@ -342,7 +343,7 @@ file).
 To actually create this layout, you should first mount the btrfs top-level
 subvolume somewhere so you can `cd` in and start creating the subvolume and
 directory structure. To continue with the rest of the installation, you should
-mount everything we've set up:
+mount everything we've set up. Here's the layout for the above example:
 
 * `@root` subvolume at `/mnt`
 * `@home` subvolume at `/mnt/home`
@@ -424,18 +425,18 @@ the basic [systemd-networkd] should be fine for most cases. You will also need
 [systemd-resolved] in order to resolve DNS requests (or an alternative DNS
 resolver if you prefer).
 
-Wireless configuration is more complicated. [NetworkManager] is probably the
-simplest way to get things working since it has a GUI which makes adding new
-wireless networks easy. Otherwise, I don't have much advice here so feel free
-to explore other solutions.
+Wireless configuration is more complicated. [NetworkManager] is pretty
+standard, but I tend to use [iwd] nowadays. Otherwise, I don't have much advice
+here so feel free to explore other solutions.
 
 [NetworkManager]: https://wiki.archlinux.org/title/NetworkManager
+[iwd]: https://wiki.archlinux.org/title/Iwd
 
 ### initramfs
 
-Though `pacstrap` already created an initramfs, it won't actually work for us
-since we need to decrypt our root directory partition when we boot. The main
-thing we need to do is update the [list of hooks](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_mkinitcpio).
+Though `pacstrap` already created an initramfs, it won't actually work if you
+need to decrypt the root directory partition when booting since it is missing
+some configuration. The main thing we need to do is update the [list of hooks](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_mkinitcpio).
 Unless you have multiple encrypted partitions (e.g. swap partition) or a
 detached LUKS header, it should be fine to stick with the `encrypt` hook
 instead of `sd-encrypt`, but you will need to choose the latter if you do need
@@ -447,14 +448,14 @@ unlock the root and swap partition without you having to type in the password
 again. Be sure to keep the key file and the initramfs (including the fallback
 one) secure by setting the permissions so only the root user can read them.
 
-Don't forget to run `mkinitcpio -P` otherwise your system will still use the
-old initramfs and your changes won't take effect likely causing your system to
+Don't forget to run `mkinitcpio -P` otherwise your changes won't take effect
+and your system will still use the old initramfs likely causing your system to
 fail to boot!
 
 ### Boot Loader
 
 The last thing we need to do before we can boot into our system is set up a
-boot loader. Usually we'd have multiple choices here, but since we need a
+boot loader. Usually we'd have multiple choices here, but if you need a
 bootloader that can both decrypt a LUKS partition and read btrfs, [GRUB] is our
 only option. If you are not encrypting your `/boot`, then you can go with a
 boot loader that supports btrfs like [rEFInd]. If you aren't using that either,
@@ -546,7 +547,7 @@ your entire root directory and be unable to run any programs including the
 ```
 
 Since I always forget all the commands, I usually write a README.md in
-`/.btrfs` describing everything. You could even make a script if you like.
+`/.btrfs` describing all this and include a script for convenience.
 
 ### User Account
 
