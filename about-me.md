@@ -27,7 +27,10 @@ a software engineer for [Google].
 * Linux Distro
   * [Arch Linux](https://archlinux.org/)
 * Text Editor
+  * [Neovim](https://neovim.io/)
   * [Vim](https://www.vim.org/)
+* Shell
+  * [Fish](https://fishshell.com/)
 * YouTube
   * [CGP Grey](https://www.youtube.com/user/CGPGrey)
   * [John Wolfe](https://www.youtube.com/user/HarshlyCritical)
