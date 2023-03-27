@@ -36,6 +36,12 @@ posts.
 $ bundle exec jekyll serve --watch --livereload --draft
 ```
 
+Update all dependencies to their latest version.
+
+```
+$ bundle update
+```
+
 # License
 
 Unless otherwise noted, the contents of my webpage are licensed under the
