@@ -77,13 +77,13 @@ and additional laptop guidance. Here's an overview of the setup:
 
 ## Pre-installation
 
-Directly from the [installation guide]:
+The main steps from the [installation guide]:
 
-1.  [Download] the installation image and install onto a [USB drive]
+1.  [Download] the installation image and write it to a [USB drive]
 2.  Boot the live environment from the USB drive
     -   You may need to disable [Secure Boot] first
     -   From this point on, you may want to use [tmux] to allow scrolling back to previous output
-3.  Set the keyboard layout (and font) if needed
+3.  Set the keyboard layout if needed
 4.  Connect to the internet
 5.  Update the system clock
 
@@ -93,7 +93,7 @@ Directly from the [installation guide]:
 
 ### Partitioning
 
-Your choice of partitioning scheme and file system are the first of the many
+Your choice of partitioning setup and file system are the first of the many
 major decisions you will have to make. These have huge ramification for the
 rest of the system, and even worse, it'll be a huge pain to fix later. I'd
 recommend taking some time to think it through; otherwise you might find
@@ -112,7 +112,7 @@ already covered.
 
 And yes, you heard that right, I'm using [Secure Boot]. I used to think it was
 overkill unless some nation's intelligence agency is gunning for you, but
-malware that infects your boot loader or even BIOS is not as rare as you might
+malware that infects your boot loader or kernel is not as rare as you might
 think. Plus, it is supported by both Ubuntu and Fedora which makes it
 commonplace even for Linux machines.
 
@@ -137,9 +137,24 @@ toolkit is for).
 
 [suggested subvolume layout]: https://wiki.archlinux.org/title/Snapper#Suggested_filesystem_layout
 
-#### EFI system partition
-#### Encrypted partition
-#### LVM
+#### Create partitions
+
+We will only need 2 partitions since the primary partition will have [LVM]
+setup. Be sure to use the [GPT] partitioning scheme which is the standard
+nowadays despite `fdisk` defaulting to MBR (or just use `gdisk`).
+
+[GPT]: https://wiki.archlinux.org/title/Partitioning#GUID_Partition_Table
+
+1.  [EFI system partition] (2 GiB)
+2.  Primary partition (remaining space)
+
+All [UEFI] systems require an [EFI system partition]. In our case, we are going
+to be mounting this partition as `/boot` on our system meaning we will store
+our kernel there (and later on [SystemRescue] installation). This means we need
+a decent amount of space in there, so I'd recommend making the partition at
+least 2 GiB. You could go even further if you are paranoid.
+
+#### Encryption and LVM
 #### Btrfs
 
 ## Installation
