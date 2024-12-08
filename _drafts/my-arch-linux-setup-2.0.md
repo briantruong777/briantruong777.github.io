@@ -137,7 +137,7 @@ toolkit is for).
 
 [suggested subvolume layout]: https://wiki.archlinux.org/title/Snapper#Suggested_filesystem_layout
 
-#### Create partitions
+### Create partitions
 
 We will only need 2 partitions since the primary partition will have [LVM]
 setup. Be sure to use the [GPT] partitioning scheme which is the standard
@@ -155,7 +155,7 @@ a decent amount of space in there, so I'd recommend making the partition at
 least 2 GiB. You could go even further if you are paranoid. Don't forget to
 format the EFI partition as FAT32.
 
-#### Encryption
+### Encryption
 
 For our primary partition, we first need to encrypt it using [dm-crypt]. There
 are [many possible encryption setups], but the one we will use is [LVM on LUKS]
@@ -181,7 +181,7 @@ and seem to actively harm performance.
 
 [disable using a read/write work queue]: https://wiki.archlinux.org/title/Dm-crypt/Specialties#Disable_workqueue_for_increased_solid_state_drive_(SSD)_performance
 
-#### LVM
+### LVM
 
 Now create an [LVM] physical volume on the `/dev/mapper/` entry for the
 encrypted partition, and put it in a volume group. Then create two logical
@@ -193,7 +193,7 @@ volumes in the volume group:
 Set up and enable [Swap] the appropriate logical volume. [Btrfs] will be a bit
 more complicated.
 
-#### Btrfs
+### Btrfs
 
 In case you are not aware of it, [Btrfs] is a CoW (copy-on-write) file system
 that has a wide variety of features including utilizing multiple devices,
@@ -260,6 +260,7 @@ After all that, we can finally start installing things. At this point, double
 check you have the following mounted (names will differ based on your setup):
 
 |                        | Path                           | Mounted At               |
+| ---------------------- | ------------------------------ | ------------------------ |
 | [dm-crypt]             | `/dev/nvme0n1p2`               | `/dev/mapper/cryptlvm`   |
 | [LVM]                  | `/dev/mapper/cryptlvm`         | `/dev/mapper/MainVolGrp` |
 | [Swap]                 | `/dev/mapper/MainVolGrp/swap`  | Enabled using `swapon`   |
@@ -267,5 +268,22 @@ check you have the following mounted (names will differ based on your setup):
 | [Btrfs] `@home`        | `/dev/mapper/MainVolGrp/btrfs` | `/home`                  |
 | [EFI system partition] | `/dev/nvme0n1p1`               | `/boot`                  |
 
+With everything mounted correctly, go ahead and use `pacstrap` to install the
+base system along with any additional packages you'll want to be available. Be
+sure to install everything needed to have internet access otherwise you won't
+be able to download any additional packages after booting into the system. To
+start you off, here's the packages I like to install early, but obviously you
+can omit them or choose your own equivalents:
+
+-   Relevant firmware, CPU microcode, etc.
+-   `lvm`
+-   `btrfs-progs`
+-   `networkmanager`
+-   `man-db` and `man-pages`
+-   `tmux`
+-   `neovim`
+-   `fish` (also `python` for parsing man pages)
+
 ## Configure the system
+
 ## Post-installation
