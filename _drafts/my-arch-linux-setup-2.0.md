@@ -195,11 +195,28 @@ more complicated.
 
 #### Btrfs
 
-In case you are not aware of it, [Btrfs] is a CoW file system that supports
-multiple devices, cheap snapshots, and transparent compression. In my case, the
-snapshotting is the main feature I find useful, but the compression is
-obviously useful for freeing up space, and supporting multiple devices can be
-great for redundancy (RAID).
+In case you are not aware of it, [Btrfs] is a CoW (copy-on-write) file system
+that has a wide variety of features including spanning over multiple devices,
+cheap snapshots, and transparent compression. In my case, the snapshotting is
+the main feature I find useful, but the compression is obviously useful for
+freeing up space, and supporting multiple devices can be great for redundancy
+(RAID). These features do come at a performance cost, and some of them are
+absolutely half-baked like [RAID5/6], but I haven't yet found any reason to
+switch away.
+
+[RAID5/6]: https://btrfs.readthedocs.io/en/stable/btrfs-man5.html#raid56-status-and-recommended-practices
+
+Do note that one big weakness of [Btrfs] is that it behaves poorly when out of
+disk space since even deletions require writing additional bytes. Such
+situations are more likely to happen than in most file systems thanks to the
+convenience of snapshots.
+
+The other weakness is the poor performance for workloads that need to update
+existing bytes repeatedly like databases and VMs. Thankfully, [Btrfs] supports
+[disabling CoW] which mostly mitigates these issues, though that does open up
+some data loss vulnerabilities.
+
+[disabling CoW]: https://wiki.archlinux.org/title/Btrfs#Disabling_CoW
 
 ## Installation
 ## Configure the system
