@@ -117,14 +117,14 @@ think. Plus, it is supported by both Ubuntu and Fedora which makes it
 commonplace even for Linux machines.
 
 The other major difference from the original guide is that I use [LVM] to
-create separate logical volumes for the [swap] space and [Btrfs] file system. I
-used to suggest using a swap file instead, but it's a bit finicky to set up on
+create separate logical volumes for the [Swap] space and [Btrfs] file system. I
+used to suggest using a Swap file instead, but it's a bit finicky to set up on
 [Btrfs], and [LVM] provides the equivalent convenience of being able to resize
 it on-the-fly. Plus, having a single [LVM] partition means we can
-encrypt/decrypt the swap and root file system in one fell swoop. Finally, [LVM]
+encrypt/decrypt the Swap and root file system in one fell swoop. Finally, [LVM]
 gives much more flexibility in the future for partitioning shenanigans.
 
-[swap]: https://wiki.archlinux.org/title/Swap
+[Swap]: https://wiki.archlinux.org/title/Swap
 
 A minor difference from the original guide is that I use [Snapper] to
 automatically take [Btrfs] snapshots, so the layout of [Btrfs] subvolumes is a
@@ -152,10 +152,54 @@ All [UEFI] systems require an [EFI system partition]. In our case, we are going
 to be mounting this partition as `/boot` on our system meaning we will store
 our kernel there (and later on [SystemRescue] installation). This means we need
 a decent amount of space in there, so I'd recommend making the partition at
-least 2 GiB. You could go even further if you are paranoid.
+least 2 GiB. You could go even further if you are paranoid. Don't forget to
+format the EFI partition as FAT32.
 
-#### Encryption and LVM
+#### Encryption
+
+For our primary partition, we first need to encrypt it using [dm-crypt]. There
+are [many possible encryption setups], but the one we will use is [LVM on LUKS]
+for the reasons described earlier.
+
+[many possible encryption setups]: https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system
+[LVM on LUKS]: https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#LVM_on_LUKS
+
+Since I just want to encrypt things to ensure a thief can't access my personal
+data, I enable [dm-crypt TRIM support] just in case it helps optimize the SSD's
+performance or lifetime. If you are paranoid about someone uncovering sensitive
+information from the pattern of TRIM'd blocks, then leave things on the default
+settings which don't do this. That being said though, if you are that paranoid,
+you should consider using something like a [detached LUKS header] so there
+truly is nothing discernible from drive.
+
+[dm-crypt TRIM support]: https://wiki.archlinux.org/title/Dm-crypt/Specialties#Discard/TRIM_support_for_solid_state_drives_(SSD)
+[detached LUKS header]: https://wiki.archlinux.org/title/Dm-crypt/Specialties#Encrypted_system_using_a_detached_LUKS_header
+
+In addition, we can [disable using a read/write work queue]. The queues were
+optimizations for batching reads/writes on HDDs, but don't make sense on SSDs
+and seem to actively harm performance.
+
+[disable using a read/write work queue]: https://wiki.archlinux.org/title/Dm-crypt/Specialties#Disable_workqueue_for_increased_solid_state_drive_(SSD)_performance
+
+#### LVM
+
+Now create an [LVM] physical volume on the `/dev/mapper/` entry for the
+encrypted partition, and put it in a volume group. Then create two logical
+volumes in the volume group:
+
+1.  [Swap] logical volume
+2.  [Btrfs] logical volume
+
+Set up and enable [Swap] the appropriate logical volume. [Btrfs] will be a bit
+more complicated.
+
 #### Btrfs
+
+In case you are not aware of it, [Btrfs] is a CoW file system that supports
+multiple devices, cheap snapshots, and transparent compression. In my case, the
+snapshotting is the main feature I find useful, but the compression is
+obviously useful for freeing up space, and supporting multiple devices can be
+great for redundancy (RAID).
 
 ## Installation
 ## Configure the system
