@@ -255,5 +255,17 @@ directories since [snapshotting can interfere] with that.
 [snapshotting can interfere]: https://wiki.archlinux.org/title/Btrfs#Effect_on_snapshots
 
 ## Installation
+
+After all that, we can finally start installing things. At this point, double
+check you have the following mounted (names will differ based on your setup):
+
+|                        | Path                           | Mounted At               |
+| [dm-crypt]             | `/dev/nvme0n1p2`               | `/dev/mapper/cryptlvm`   |
+| [LVM]                  | `/dev/mapper/cryptlvm`         | `/dev/mapper/MainVolGrp` |
+| [Swap]                 | `/dev/mapper/MainVolGrp/swap`  | Enabled using `swapon`   |
+| [Btrfs] `@root`        | `/dev/mapper/MainVolGrp/btrfs` | `/`                      |
+| [Btrfs] `@home`        | `/dev/mapper/MainVolGrp/btrfs` | `/home`                  |
+| [EFI system partition] | `/dev/nvme0n1p1`               | `/boot`                  |
+
 ## Configure the system
 ## Post-installation
