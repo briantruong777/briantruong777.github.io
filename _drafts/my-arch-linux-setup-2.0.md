@@ -196,27 +196,63 @@ more complicated.
 #### Btrfs
 
 In case you are not aware of it, [Btrfs] is a CoW (copy-on-write) file system
-that has a wide variety of features including spanning over multiple devices,
-cheap snapshots, and transparent compression. In my case, the snapshotting is
-the main feature I find useful, but the compression is obviously useful for
-freeing up space, and supporting multiple devices can be great for redundancy
-(RAID). These features do come at a performance cost, and some of them are
-absolutely half-baked like [RAID5/6], but I haven't yet found any reason to
-switch away.
+that has a wide variety of features including utilizing multiple devices,
+efficient snapshotting, and transparent compression. These features do come at
+a performance cost, and some of them are downright broken like [RAID5/6], but
+at least for my purposes, the good outweighs the bad.
 
 [RAID5/6]: https://btrfs.readthedocs.io/en/stable/btrfs-man5.html#raid56-status-and-recommended-practices
 
-Do note that one big weakness of [Btrfs] is that it behaves poorly when out of
-disk space since even deletions require writing additional bytes. Such
-situations are more likely to happen than in most file systems thanks to the
-convenience of snapshots.
+One big weakness of [Btrfs] is that it behaves poorly when out of disk space
+since even deletions require writing new bytes. Such situations are more likely
+than one might expect thanks to the convenience of snapshots.
 
-The other weakness is the poor performance for workloads that need to update
-existing bytes repeatedly like databases and VMs. Thankfully, [Btrfs] supports
-[disabling CoW] which mostly mitigates these issues, though that does open up
-some data loss vulnerabilities.
+Another weakness is the poor performance for workloads that need to update
+existing blocks repeatedly like databases and VMs. Thankfully, [Btrfs] supports
+[disabling CoW] for specified directories/files which mitigates the issue.
 
 [disabling CoW]: https://wiki.archlinux.org/title/Btrfs#Disabling_CoW
+
+Anyway, assuming you are going along with using [Btrfs], the main thing you
+need to decide is which [RAID profile] to use. If you have a multi-device
+system, I assume you intend on using `raid1` or similar for both metadata
+(`-m`) and data (`-d`), so be sure to set this when calling `mkfs.btrfs`. For a
+single device, `mkfs.btrfs` defaults to `dup` for metadata and `single` for
+data. This gives metadata some redundancy to prevent corruptions from breaking
+the entire file system.
+
+[RAID profile]: https://btrfs.readthedocs.io/en/stable/mkfs.btrfs.html#profiles
+
+When mounting the [Btrfs] partition, I recommend setting the `noatime` option.
+This will skip updating access times of any directories or files accessed.
+Though this is beneficial with any file system when you don't care about access
+times, it is especially beneficial for [Btrfs] since the entire metadata block
+would need to be copied just to update the access time.
+
+The other recommended mount option is `compress=lzo` which makes [Btrfs]
+automatically compress all files. Note that there are some basic heuristics to
+store a file uncompressed if the compression ratio is poor (e.g. the data was
+already compressed), so it's okay to just default to doing compression. There
+are other compression algorithms you could choose if you don't mind spending
+more CPU (`compress=zstd=15`), but one [random person's benchmark] suggests
+that for fast NVMe SSDs, even `zstd=1` is too slow to be beneficial, so `lzo`
+it is.
+
+[random person's benchmark]: https://gist.github.com/braindevices/fde49c6a8f6b9aaf563fb977562aafec
+
+Now that all the long-winded explanations are over with, go ahead and create
+the following [Btrfs] subvolumes:
+
+-   `@root` mounted at `/`
+-   `@home` mounted at `/home`
+
+We keep `/home` in a separate subvolume to ensure that snapshots of system
+files don't include user files so rollbacks won't revert user files too. For
+the same reason, you could create a subvolume specifically for snapshots too.
+You may also want to create separate subvolumes for disabling CoW in certain
+directories since [snapshotting can interfere] with that.
+
+[snapshotting can interfere]: https://wiki.archlinux.org/title/Btrfs#Effect_on_snapshots
 
 ## Installation
 ## Configure the system
