@@ -286,4 +286,40 @@ can omit them or choose your own equivalents:
 
 ## Configure the system
 
+And now the fun part where you have to configure everything correctly otherwise
+your system won't boot properly and you will have no clue what the heck went
+wrong so you desparately try rerunning all sorts of commands until you are
+forced to confront the fact that you have no option left except to delete
+everything and start over from the beginning. But anyway, I'm sure that won't
+happen to you, so no need to worry.
+
+Use `genfstab` to generate the fstab file at `/mnt/etc/fstab`. `genfstab` uses
+the current mountings, so you may need to manually correct the entries. In
+particular, the [Btrfs] mountings should use the `subvol=` option to specify
+whether to mount `@root` or `@home`. Afterwards, `arch-chroot` into `/mnt` and
+configure the following:
+
+1.  Timezone
+2.  Hardware clock
+3.  Localization
+4.  Keyboard layout
+5.  Hostname
+6.  Network access
+7.  Root password
+
+### Initramfs
+
+[Initramfs] contains all files necessary during the early boot process before
+the root file system is mounted. This also means it needs to be configured
+correctly to ensure the system can complete the boot process. For our case, we
+need to ensure that the appropriate [hooks] are set in `/etc/mkinitcpio.conf`.
+In particular:
+
+-   Add the [`lvm2` and `encrypt` hooks]
+-   Add the `btrfs` hook if your [Btrfs] file system is on multiple devices
+
+[Initramfs]: https://wiki.archlinux.org/title/Arch_boot_process#initramfs
+[hooks]: https://wiki.archlinux.org/title/Mkinitcpio#Common_hooks
+[`lvm2` and `encrypt` hooks]: https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_mkinitcpio_3
+
 ## Post-installation
