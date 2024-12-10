@@ -318,8 +318,40 @@ In particular:
 -   Add the [`lvm2` and `encrypt` hooks]
 -   Add the `btrfs` hook if your [Btrfs] file system is on multiple devices
 
+Don't forget to run `mkinitcpio -P` to rebuild your initramfs after you are
+done configuring it. Forgetting to do so likely means your system won't boot
+since it'll use the old initramfs.
+
 [Initramfs]: https://wiki.archlinux.org/title/Arch_boot_process#initramfs
 [hooks]: https://wiki.archlinux.org/title/Mkinitcpio#Common_hooks
 [`lvm2` and `encrypt` hooks]: https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_mkinitcpio_3
+
+If you aren't going to set up [Secure Boot], then you can skip to the next
+section on install [rEFInd] boot manager. Otherwise, you'll need to create a
+[unified kernel image] which packages everything Linux needs to boot into a
+single UEFI executable. This executable can then be properly signed so [Secure
+Boot] can boot it.
+
+[unified kernel image]: https://wiki.archlinux.org/title/Unified_kernel_image
+
+TODO: Figure out secure boot
+
+### rEFInd Boot Manager
+
+I used to recommend using [GRUB], but even though it's the default for a lot of
+distros, it's a bit annoying to configure and likely has more features than you
+need. In the old guide, I used it because it was the only boot manager that
+could decrypt some types of [dm-crypt] encryption and read [Btrfs]. Now that we
+aren't using an encrypted `/boot`, we can use my preferred boot manager,
+[rEFInd]. It's a lot simpler since it almost automatically works
+out-of-the-box, even in surprisingly complex situations like dual-booting with
+Windows or macOS. There are also many [rEFInd themes] (my favorite is
+[refind-theme-regular]).
+
+[GRUB]: https://wiki.archlinux.org/title/GRUB
+[rEFInd themes]: https://www.rodsbooks.com/refind/themes.html
+[refind-theme-regular]: https://github.com/bobafetthotmail/refind-theme-regular
+
+TODO: Figure out secure boot
 
 ## Post-installation
