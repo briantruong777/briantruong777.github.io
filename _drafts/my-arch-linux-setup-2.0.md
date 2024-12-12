@@ -326,11 +326,53 @@ since it'll use the old initramfs.
 [hooks]: https://wiki.archlinux.org/title/Mkinitcpio#Common_hooks
 [`lvm2` and `encrypt` hooks]: https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_mkinitcpio_3
 
+#### Secure Boot
+
 If you aren't going to set up [Secure Boot], then you can skip to the next
-section on install [rEFInd] boot manager. Otherwise, you'll need to create a
-[unified kernel image] which packages everything Linux needs to boot into a
-single UEFI executable. This executable can then be properly signed so [Secure
-Boot] can boot it.
+section.
+
+[Secure Boot] is a UEFI feature that protects against executing unapproved
+binaries during the boot process. This mainly serves to prevent malware from
+being installed into the boot process or kernel itself where it can easily hide
+from your OS. Assuming you have a BIOS/UEFI password and encrypt your root file
+system, [Secure Boot] can potentially protect you from attackers with physical
+access. In practice though, many BIOS/UEFI implementations have password reset
+procedures that only require physical access. Even the protection from remote
+attackers depends on your chosen setup, e.g., storing the Machine Owner Key on
+the system itself means an attacker could read it and sign their own binaries.
+No security system is 100% secure, and I don't have enough expertise to even
+judge how secure the setup below is. However, I do think it provides a
+reasonable increase in security which can deter most attackers. You only need
+to be more secure than your neighbors after all.
+
+[Secure Boot] is a complicated beast, but if you are seeking a deeper
+understanding, I found Rod Smith's [Dealing with Secure Boot] to be very useful
+for both educational and practical purposes. This guide will still contain
+basic explanations.
+
+[Dealing with Secure Boot]: https://www.rodsbooks.com/efi-bootloaders/secureboot.html
+
+At its core, [Secure Boot] means that your computer's UEFI will only boot
+binaries or accept keys that have been approved by Microsoft. This would
+usually lock out Linux entirely, but there are specific third-party binaries
+that Microsoft has signed which allow for booting other binaries:
+
+1.  [shim]
+2.  [PreLoader]
+
+Both of these allow end-users to add additional binaries and/or keys beyond the
+Microsoft ones. This does weaken the chain of trust since you might get tricked
+into adding a binary/key that is controlled by an attacker or leak the private
+key. However, since this can only be done outside of the OS itself, it'd be
+hard for a remote attacker to do so. Of the two, [shim] is the more up-to-date
+one and thus the recommended one to use.
+
+[shim]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#shim
+[PreLoader]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#PreLoader
+
+TODO: Otherwise, things you'll need to create a [unified kernel image] which
+packages everything Linux needs to boot into a single UEFI executable. This
+executable can then be properly signed so [Secure Boot] can boot it.
 
 [unified kernel image]: https://wiki.archlinux.org/title/Unified_kernel_image
 
