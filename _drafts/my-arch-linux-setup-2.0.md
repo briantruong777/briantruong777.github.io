@@ -28,11 +28,11 @@ parts and explain certain choices.
 
 [installation guide]: https://wiki.archlinux.org/title/Installation_guide
 
-Compared to the original post, the many differences including my reduced
-patience for customization, unencrypted `/boot`, no mention of virtualization,
-and additional laptop guidance. Here's an overview of the setup:
+Compared to the original post, the differences include my reduced patience for
+customization, unencrypted `/boot`, no mention of virtualization, additional
+laptop guidance, and more. Here's an overview of the setup:
 
--   [UEFI] with [Secure Boot] enabled
+-   [UEFI] with [Secure Boot] via [shim]
 -   [rEFInd] boot manager
 -   Partitioning ([GPT])
     -   [EFI system partition] mounted to `/boot`
@@ -56,6 +56,7 @@ and additional laptop guidance. Here's an overview of the setup:
 
 [UEFI]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface
 [Secure Boot]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot
+[shim]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#shim
 [rEFInd]: https://wiki.archlinux.org/title/REFInd
 [GPT]: https://wiki.archlinux.org/title/Partitioning#GUID_Partition_Table
 [EFI system partition]: https://wiki.archlinux.org/title/EFI_system_partition
@@ -82,8 +83,8 @@ The main steps from the [installation guide]:
 1.  [Download] the installation image and write it to a [USB drive]
 2.  Boot the live environment from the USB drive
     -   You may need to disable [Secure Boot] first
-    -   From this point on, you may want to use [tmux] to allow scrolling back to previous output
-3.  Set the keyboard layout if needed
+    -   You may want to use [tmux] to allow scrolling back to previous output
+3.  Set the keyboard layout
 4.  Connect to the internet
 5.  Update the system clock
 
@@ -103,18 +104,24 @@ Compared to the original guide, the main difference is the unencrypted `/boot`
 which is now stored in the [EFI system partition]. This prevents synchronously
 snapshotting the kernel with the rest of the root file system, but since the
 original guide was written, I've never had a need to atomically rollback the
-kernel and kernel modules together. Thus, it doesn't seem worth the complexity
-and suffering from being restricted to [GRUB]. Plus, I am now going to use
-[Secure Boot], so the other benefit of preventing tampering of the kernel is
-already covered.
+kernel and kernel modules together.[^atomic] Thus, it doesn't seem worth the
+complexity and suffering from being restricted to [GRUB]. Plus, I am now going
+to use [Secure Boot], so the other benefit of preventing tampering of the
+kernel is somewhat covered.
+
+[^atomic]: If this is something you are interested in, I'd suggest using a
+    distro actually designed for atomic updates/rollbacks like [Fedora
+    Silverblue] or [NixOS].
 
 [GRUB]: https://wiki.archlinux.org/title/GRUB
+[Fedora Silverblue]: https://fedoraproject.org/atomic-desktops/silverblue
+[NixOS]: https://nixos.org
 
 And yes, you heard that right, I'm using [Secure Boot]. I used to think it was
 overkill unless some nation's intelligence agency is gunning for you, but
-malware that infects your boot loader or kernel is not as rare as you might
-think. Plus, it is supported by both Ubuntu and Fedora which makes it
-commonplace even for Linux machines.
+malware that infects your boot loader or kernel is not as rare as it used to
+be. Plus, it is supported by both Ubuntu and Fedora which makes it commonplace
+even for Linux machines.
 
 The other major difference from the original guide is that I use [LVM] to
 create separate logical volumes for the [Swap] space and [Btrfs] file system. I
@@ -209,7 +216,7 @@ than one might expect thanks to the convenience of snapshots.
 
 Another weakness is the poor performance for workloads that need to update
 existing blocks repeatedly like databases and VMs. Thankfully, [Btrfs] supports
-[disabling CoW] for specified directories/files which mitigates the issue.
+[disabling CoW] for specified directories and files which mitigates the issue.
 
 [disabling CoW]: https://wiki.archlinux.org/title/Btrfs#Disabling_CoW
 
@@ -307,26 +314,29 @@ configure the following:
 6.  Network access
 7.  Root password
 
+And now we get to the trickiest part, making sure your system can actually boot
+on its own. However, we first need to talk about [Secure Boot].
+
 ### Secure Boot
 
 [Secure Boot] is a UEFI feature that protects against executing unapproved
 binaries during the boot process. This mainly serves to prevent malware from
-being installed into the boot process or kernel itself where it can easily hide
-from your OS. Assuming you have a BIOS/UEFI password and encrypt your root file
-system, [Secure Boot] can potentially protect you from attackers with physical
-access. In practice though, many BIOS/UEFI implementations have password reset
-procedures that only require physical access. Even the protection from remote
-attackers depends on your chosen setup, e.g., storing the Machine Owner Key on
-the system itself means an attacker could read it and sign their own binaries.
-No security system is 100% secure, and I don't have enough expertise to even
-judge how secure the setup below is. However, I do think it provides a
-reasonable increase in security which can deter most attackers. After all, you
-only need to be more secure than your neighbors.
+remotely installing itself inside the boot loader, boot manager, or kernel
+where it can easily hide from your OS. Note that [Secure Boot] can simply be
+disabled in the UEFI interface, so it is primarily a deterrent for remote
+attackers who cannot access the pre-boot environment.[^uefi-password]
+
+[^uefi-password]: Even if you add a BIOS/UEFI password, many machines have
+    password reset procedures that only require physical access. Even ignoring
+    that, there are a variety of ways to forcibly manipulate or dump the data
+    stored in a motherboard. If you are serious about stopping an attacker with
+    physical access, the best way is to never allow them physical access in the
+    first place.
 
 [Secure Boot] is a complicated beast, but if you are seeking a deeper
 understanding, I found Rod Smith's [Dealing with Secure Boot] to be very useful
-for both educational and practical purposes. This guide will still contain
-basic explanations.
+for both educational and practical purposes. In comparison, this guide will
+contain only basic explanations and gloss over many details.
 
 [Dealing with Secure Boot]: https://www.rodsbooks.com/efi-bootloaders/secureboot.html
 
@@ -339,43 +349,40 @@ matter for us are:
 1.  [shim]
 2.  [PreLoader]
 
-Both of these allow end-users to add additional binaries and/or keys beyond the
+Both of these allow end-users to add additional binaries and keys beyond the
 Microsoft/vendor ones. This does weaken the chain of trust since you might get
-tricked into adding a binary/key that is controlled by an attacker. However,
+tricked into adding a binary or key that is controlled by an attacker. However,
 since this can only be done during the pre-boot process, it'd be hard for a
 remote attacker to do so. Of the two, [shim] is the more flexible and
-up-to-date one and thus the recommended one to use.
+up-to-date one, so I recommended using it over [PreLoader].
 
-[shim]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#shim
 [PreLoader]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#PreLoader
 
-A few possible setups are:
+The way [shim] works is that:
 
-1.  Replace the Microsoft/vendor keys so UEFI can directly start your kernel
-2.  UEFI starts the [shim] which starts your boot manager which then starts
-    your kernel
+1.  UEFI starts the [shim]
+2.  [shim] starts your boot manager
+3.  Your boot manager boots your kernel
 
-#1 is risky since some machines have internal firmware signed with those keys,
-so replacing them could brick the machine. However, it does allow you to
-maintain full control since no one else in the world would have the keys needed
-to sign binaries your machine will run (unless they steal them from you of
-course).
+#1 passes [Secure Boot] restrictions since the [shim] was signed with
+Microsoft's key. #2 and #3 require your boot manager and your kernel binaries
+to either be directly added to the [shim]'s database or be signed by a Machine
+Owner Key (MOK) also added to the [shim]'s database. Note that the former is
+not recommended for binaries that are updated frequently (e.g. the Arch Linux
+kernel) since you'll eventually run out of NVRAM space and have to remove
+previous entries manually.
 
-#2 is the approach followed in this guide. It requires registering your own
-Machine Owner Key (MOK) with the [shim]. Then, you sign both the boot manager
-and your kernel with your MOK. After that, [shim] will allow booting your boot
-manager which can then boot your kernel. Be sure to use a boot manager that
-actually enforces the same [Secure Boot] requirements otherwise it'll defeat
-the point of this whole exercise.
+The MOK is usually generated by you and kept somewhere safe otherwise an
+attacker could use it to sign their own binaries. In this setup, we do take a
+bit of a risk and leave it in your encrypted root file system. This is way more
+convenient for updating the kernel since the MOK will be easily available to
+sign the new kernel. However, an attacker could potentially gain access to the
+MOK if they gain root access (I assume you would make the key only accessible
+by the root user, right?).
 
-In most cases, you likely will want to build a [unified kernel image]. This
-packages the kernel and everything it needs into a single executable which
-makes it easy to sign with your key.
-
-[unified kernel image]: https://wiki.archlinux.org/title/Unified_kernel_image
-
-Assuming you still wish to use [Secure Boot], the additional necessary steps
-are labeled in the next few sections.
+Be sure to use a boot manager that actually enforces the same [Secure Boot]
+requirements otherwise it'll defeat the point of this whole exercise (e.g.
+[rEFInd]).
 
 ### Initramfs
 
@@ -395,6 +402,12 @@ since it'll use the old initramfs.
 [Initramfs]: https://wiki.archlinux.org/title/Arch_boot_process#initramfs
 [hooks]: https://wiki.archlinux.org/title/Mkinitcpio#Common_hooks
 [`lvm2` and `encrypt` hooks]: https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_mkinitcpio_3
+
+In most cases, you likely will want to build a [unified kernel image]. This
+packages the kernel and everything it needs into a single executable which
+makes it easy to sign with your MOK.
+
+[unified kernel image]: https://wiki.archlinux.org/title/Unified_kernel_image
 
 TODO: Figure out secure boot
 
