@@ -395,21 +395,30 @@ In particular:
 -   Add the [`lvm2` and `encrypt` hooks]
 -   Add the `btrfs` hook if your [Btrfs] file system is on multiple devices
 
-Don't forget to run `mkinitcpio -P` to rebuild your initramfs after you are
-done configuring it. Forgetting to do so likely means your system won't boot
-since it'll use the old initramfs.
-
 [Initramfs]: https://wiki.archlinux.org/title/Arch_boot_process#initramfs
 [hooks]: https://wiki.archlinux.org/title/Mkinitcpio#Common_hooks
 [`lvm2` and `encrypt` hooks]: https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_mkinitcpio_3
 
-In most cases, you likely will want to build a [unified kernel image]. This
+Note that you could choose to use the systemd-based setup instead of the
+default Busybox-based setup. This basically means using a different set of
+hooks which have various differences. In particular, the [`sd-encrypt`] hook
+supports some additional features that the Busybox equivalent `encrypt` hook
+does not. If you need these additional features, feel free to switch over, but
+otherwise, the default Busybox-based setup is sufficient for my needs.
+
+[`sd-encrypt`]: https://wiki.archlinux.org/title/Dm-crypt/System_configuration#Using_encrypt_hook
+
+For [Secure Boot] support, we need to build a [unified kernel image]. This
 packages the kernel and everything it needs into a single executable which
 makes it easy to sign with your MOK.
 
 [unified kernel image]: https://wiki.archlinux.org/title/Unified_kernel_image
 
 TODO: Figure out secure boot
+
+Don't forget to run `mkinitcpio -P` to rebuild your initramfs after you are
+done configuring it. Forgetting to do so likely means your system won't boot
+since it'll use the old initramfs.
 
 ### rEFInd Boot Manager
 
