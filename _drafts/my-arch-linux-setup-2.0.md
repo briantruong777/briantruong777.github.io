@@ -285,6 +285,9 @@ can omit them or choose your own equivalents:
 -   Relevant firmware, CPU microcode, etc.
 -   `lvm`
 -   `btrfs-progs`
+-   `efitools`
+-   `sbctl`
+-   `sbsigntools`
 -   `networkmanager`
 -   `man-db` and `man-pages`
 -   `tmux`
@@ -399,17 +402,24 @@ requirements otherwise it'll defeat the point of this whole exercise (e.g.
 ### Initramfs
 
 [Initramfs] contains all files necessary during the early boot process before
-the root file system is mounted. This also means it needs to be configured
+the root file system is mounted. [Mkinitcpio] is the default way to create the
+[initramfs] in Arch Linux. It is important that your [initramfs] is configured
 correctly to ensure the system can complete the boot process. For our case, we
-need to ensure that the appropriate [hooks] are set in `/etc/mkinitcpio.conf`.
-In particular:
+need to ensure that the appropriate [hooks] are set in `/etc/mkinitcpio.conf`
+in the correct order. In particular:
 
--   Add the [`lvm2` and `encrypt` hooks]
--   Add the `btrfs` hook if your [Btrfs] file system is on multiple devices
+-   [`lvm2` and `encrypt` hooks]
+-   [`resume` hook]
+-   [`microcode` hook]
+-   `keyboard` and `keymap` must be before `encrypt` for typing your password
+-   `btrfs` hook if your [Btrfs] file system is on multiple devices
 
 [Initramfs]: https://wiki.archlinux.org/title/Arch_boot_process#initramfs
+[Mkinitcpio]: https://wiki.archlinux.org/title/Mkinitcpio
 [hooks]: https://wiki.archlinux.org/title/Mkinitcpio#Common_hooks
-[`lvm2` and `encrypt` hooks]: https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_mkinitcpio_3
+[`lvm2` and `encrypt` hooks]: https://wiki.archlinux.org/title/Dm-crypt/System_configuration#mkinitcpio
+[`resume` hook]: https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate#Configure_the_initramfs
+[`microcode` hook]: https://wiki.archlinux.org/title/Microcode#mkinitcpio
 
 Note that you could choose to use the systemd-based setup instead of the
 default Busybox-based setup. This basically means using a different set of
@@ -422,35 +432,47 @@ otherwise, the default Busybox-based setup is sufficient for my needs.
 
 #### Unified kernel image
 
-Next, we will build a [unified kernel image]. This packages the kernel and
-everything it needs into a single executable which will ensure that all
-relevant files are secured properly. Otherwise, it may be possible to
-manipulate other unsigned files without being detected by [Secure Boot]. Some
-boot managers may correctly check all other files are signed properly, but it's
-hard to beat the simplicity of signing a single binary blob.
+Next, we will configure [mkinitcpio] to build a [unified kernel image]. This
+packages the kernel and everything it needs into a single executable which will
+ensure that all relevant files can be signed in one go. Otherwise, it will be
+possible to manipulate other unsigned files without being detected by [Secure
+Boot].
 
 [unified kernel image]: https://wiki.archlinux.org/title/Unified_kernel_image
 
-There are a variety of ways to build a [unified kernel image], but I'll stick
-with using mkinitcpio since it's the default way to build our initramfs for
-Arch Linux.
+Lucky for us, [mkinitcpio] can already create a [unified kernel image]. Consult
+the [mkinitcpio instructions] and make sure to do the following:
 
-TODO: Figure out secure boot
+1.  Add `/etc/cmdline.d/*.conf` files to set the [kernel parameters]:
+    -   [`cryptdevice=UUID=XXX:cryptlvm`]
+    -   `root=/dev/mapper/MainVolGrp/btrfs`
+    -   [`rootflags=subvol=@root`]
+    -   [`resume=/dev/MainVolGrp/swap`]
+    -   Do *not* set `initrd` since `mkinitcpio` will add it for us
+2.  Update the `/etc/mkinitcpio.d/linux.preset` file
+3.  Ensure `sbctl` is installed which sets up a pacman hook to automatically
+    sign updated EFI binaries
+
+[mkinitcpio instructions]: https://wiki.archlinux.org/title/Unified_kernel_image#mkinitcpio
+[kernel parameters]: https://wiki.archlinux.org/title/Kernel_parameters
+[`cryptdevice=UUID=XXX:cryptlvm`]: https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_the_boot_loader_2
+[`rootflags=subvol=@root`]: https://wiki.archlinux.org/title/Btrfs#Mounting_subvolume_as_root
+[`resume=/dev/MainVolGrp/swap`]: https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate#Pass_hibernate_location_to_initramfs
 
 #### Rebuild initramfs
 
-Don't forget to run `mkinitcpio -P` to rebuild your initramfs after you are
+Don't forget to run `mkinitcpio -P` to rebuild your [initramfs] after you are
 done configuring it. Forgetting to do so likely means your system won't boot
-since it'll use the old initramfs.
+since it'll use the old [initramfs].
 
 ### rEFInd Boot Manager
 
 I used to recommend using [GRUB], but even though it's the default for a lot of
 distros, it's a bit annoying to configure and likely has more features than you
 need. In the old guide, I used it because it was the only boot manager that
-could decrypt some types of [dm-crypt] encryption and read [Btrfs]. Now that we
-aren't using an encrypted `/boot`, we can use my preferred boot manager,
-[rEFInd]. It's a lot simpler since it almost automatically works
+could both decrypt a [dm-crypt] encrypted partition and read a [Btrfs] file
+system. Now that we aren't using an encrypted `/boot`, we can use my preferred
+boot manager, [rEFInd]. It's a lot simpler since it almost automatically works
 out-of-the-box, even in surprisingly complex situations like dual-booting with
 Windows or macOS. There are also many [rEFInd themes] (my favorite is
 [refind-theme-regular]).
