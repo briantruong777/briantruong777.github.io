@@ -402,11 +402,11 @@ requirements otherwise it'll defeat the point of this whole exercise (e.g.
 ### Initramfs
 
 [Initramfs] contains all files necessary during the early boot process before
-the root file system is mounted. [Mkinitcpio] is the default way to create the
-[initramfs] in Arch Linux. It is important that your [initramfs] is configured
-correctly to ensure the system can complete the boot process. For our case, we
-need to ensure that the appropriate [hooks] are set in `/etc/mkinitcpio.conf`
-in the correct order. In particular:
+the root file system is mounted. It is important that your [initramfs] is
+configured correctly to ensure the system can complete the boot process. In
+Arch Linux, [mkinitcpio] is the default way to create the [initramfs]. In our
+case, we need to ensure that the appropriate [hooks] are set in
+`/etc/mkinitcpio.conf`:
 
 -   [`lvm2` and `encrypt` hooks]
 -   [`resume` hook]
@@ -415,11 +415,13 @@ in the correct order. In particular:
 -   `btrfs` hook if your [Btrfs] file system is on multiple devices
 
 [Initramfs]: https://wiki.archlinux.org/title/Arch_boot_process#initramfs
-[Mkinitcpio]: https://wiki.archlinux.org/title/Mkinitcpio
+[mkinitcpio]: https://wiki.archlinux.org/title/Mkinitcpio
 [hooks]: https://wiki.archlinux.org/title/Mkinitcpio#Common_hooks
 [`lvm2` and `encrypt` hooks]: https://wiki.archlinux.org/title/Dm-crypt/System_configuration#mkinitcpio
 [`resume` hook]: https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate#Configure_the_initramfs
 [`microcode` hook]: https://wiki.archlinux.org/title/Microcode#mkinitcpio
+
+Be sure to put the hooks in the correct order.
 
 Note that you could choose to use the systemd-based setup instead of the
 default Busybox-based setup. This basically means using a different set of
@@ -436,12 +438,7 @@ Next, we will configure [mkinitcpio] to build a [unified kernel image]. This
 packages the kernel and everything it needs into a single executable which will
 ensure that all relevant files can be signed in one go. Otherwise, it will be
 possible to manipulate other unsigned files without being detected by [Secure
-Boot].
-
-[unified kernel image]: https://wiki.archlinux.org/title/Unified_kernel_image
-
-Lucky for us, [mkinitcpio] can already create a [unified kernel image]. Consult
-the [mkinitcpio instructions] and make sure to do the following:
+Boot]. Consult the [mkinitcpio instructions] and make sure to do the following:
 
 1.  Add `/etc/cmdline.d/*.conf` files to set the [kernel parameters]:
     -   [`cryptdevice=UUID=XXX:cryptlvm`]
@@ -453,6 +450,7 @@ the [mkinitcpio instructions] and make sure to do the following:
 3.  Ensure `sbctl` is installed which sets up a pacman hook to automatically
     sign updated EFI binaries
 
+[unified kernel image]: https://wiki.archlinux.org/title/Unified_kernel_image
 [mkinitcpio instructions]: https://wiki.archlinux.org/title/Unified_kernel_image#mkinitcpio
 [kernel parameters]: https://wiki.archlinux.org/title/Kernel_parameters
 [`cryptdevice=UUID=XXX:cryptlvm`]: https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_the_boot_loader_2
@@ -470,7 +468,7 @@ since it'll use the old [initramfs].
 I used to recommend using [GRUB], but even though it's the default for a lot of
 distros, it's a bit annoying to configure and likely has more features than you
 need. In the old guide, I used it because it was the only boot manager that
-could both decrypt a [dm-crypt] encrypted partition and read a [Btrfs] file
+could read from both a [dm-crypt] encrypted partition and the [Btrfs] file
 system. Now that we aren't using an encrypted `/boot`, we can use my preferred
 boot manager, [rEFInd]. It's a lot simpler since it almost automatically works
 out-of-the-box, even in surprisingly complex situations like dual-booting with
@@ -480,6 +478,19 @@ Windows or macOS. There are also many [rEFInd themes] (my favorite is
 [rEFInd themes]: https://www.rodsbooks.com/refind/themes.html
 [refind-theme-regular]: https://github.com/bobafetthotmail/refind-theme-regular
 
-TODO: Figure out secure boot
+For our case, it also has built-in support to automaticaly sign itself with
+your MOK (and even create an MOK for you). Follow the instructions for [Secure
+Boot with rEFInd]. Note that you may need to set up an icon yourself since
+rEFInd can't automatically discern one from a [unified kernel image].
+
+[Secure Boot with rEFInd]: https://wiki.archlinux.org/title/REFInd#Secure_Boot
+
+### Reboot
+
+Now that everything is set up correctly (supposedly), you should be able to
+exit the chroot environment, `umount -R /mnt` everything, and simply `reboot`
+your machine. If your system boots up, great you did it! If it didn't, well,
+that's just how it goes sometimes, and you'll have to go troubleshoot what
+exactly went wrong.
 
 ## Post-installation
