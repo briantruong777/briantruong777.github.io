@@ -351,12 +351,24 @@ matter for us are:
 
 Both of these allow end-users to add additional binaries and keys beyond the
 Microsoft/vendor ones. This does weaken the chain of trust since you might get
-tricked into adding a binary or key that is controlled by an attacker. However,
+tricked into adding an attacker controlled key, or they might replace your
+entire boot setup with one that does what they want.[^weak-chain] However,
 since this can only be done during the pre-boot process, it'd be hard for a
 remote attacker to do so. Of the two, [shim] is the more flexible and
 up-to-date one, so I recommended using it over [PreLoader].
 
+[^weak-chain]: If you are worried about this, an alternative is to [replace the
+    Microsoft/vendor keys] with your own so that only binaries you sign can be
+    executed. This prevents any version of the [shim] or [PreLoader] from
+    executing which prevents attackers from supplanting your boot setup with
+    their own. However, this could brick your machine if it needs to execute
+    firmware signed only with Microsoft/vendor keys. You have been warned.
+    Supposedly the Framework Laptop 13 (AMD 7040) supports Secure Boot [without
+    any Microsoft/vendor keys].
+
 [PreLoader]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#PreLoader
+[replace the Microsoft/vendor keys]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#Using_your_own_keys
+[without any Microsoft/vendor keys]: https://community.frame.work/t/solved-secure-boot-and-custom-keys-on-the-amd-motherboard/38362
 
 The way [shim] works is that:
 
@@ -408,13 +420,24 @@ otherwise, the default Busybox-based setup is sufficient for my needs.
 
 [`sd-encrypt`]: https://wiki.archlinux.org/title/Dm-crypt/System_configuration#Using_encrypt_hook
 
-For [Secure Boot] support, we need to build a [unified kernel image]. This
-packages the kernel and everything it needs into a single executable which
-makes it easy to sign with your MOK.
+#### Unified kernel image
+
+Next, we will build a [unified kernel image]. This packages the kernel and
+everything it needs into a single executable which will ensure that all
+relevant files are secured properly. Otherwise, it may be possible to
+manipulate other unsigned files without being detected by [Secure Boot]. Some
+boot managers may correctly check all other files are signed properly, but it's
+hard to beat the simplicity of signing a single binary blob.
 
 [unified kernel image]: https://wiki.archlinux.org/title/Unified_kernel_image
 
+There are a variety of ways to build a [unified kernel image], but I'll stick
+with using mkinitcpio since it's the default way to build our initramfs for
+Arch Linux.
+
 TODO: Figure out secure boot
+
+#### Rebuild initramfs
 
 Don't forget to run `mkinitcpio -P` to rebuild your initramfs after you are
 done configuring it. Forgetting to do so likely means your system won't boot
@@ -432,7 +455,6 @@ out-of-the-box, even in surprisingly complex situations like dual-booting with
 Windows or macOS. There are also many [rEFInd themes] (my favorite is
 [refind-theme-regular]).
 
-[GRUB]: https://wiki.archlinux.org/title/GRUB
 [rEFInd themes]: https://www.rodsbooks.com/refind/themes.html
 [refind-theme-regular]: https://github.com/bobafetthotmail/refind-theme-regular
 
