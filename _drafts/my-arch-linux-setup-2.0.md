@@ -148,7 +148,7 @@ toolkit is for).
 
 We will only need 2 partitions since the primary partition will have [LVM]
 setup. Be sure to use the [GPT] partitioning scheme which is the standard
-nowadays despite `fdisk` defaulting to MBR (or just use `gdisk`).
+nowadays despite `fdisk` defaulting to MBR (or just use `gdisk` or `cfdisk`).
 
 [GPT]: https://wiki.archlinux.org/title/Partitioning#GUID_Partition_Table
 
@@ -266,14 +266,14 @@ directories since [snapshotting can interfere] with that.
 After all that, we can finally start installing things. At this point, double
 check you have the following mounted (names will differ based on your setup):
 
-|                        | Path                           | Mounted At               |
-| ---------------------- | ------------------------------ | ------------------------ |
-| [dm-crypt]             | `/dev/nvme0n1p2`               | `/dev/mapper/cryptlvm`   |
-| [LVM]                  | `/dev/mapper/cryptlvm`         | `/dev/mapper/MainVolGrp` |
-| [Swap]                 | `/dev/mapper/MainVolGrp/swap`  | Enabled using `swapon`   |
-| [Btrfs] `@root`        | `/dev/mapper/MainVolGrp/btrfs` | `/`                      |
-| [Btrfs] `@home`        | `/dev/mapper/MainVolGrp/btrfs` | `/home`                  |
-| [EFI system partition] | `/dev/nvme0n1p1`               | `/boot`                  |
+|                        | Path                    | Mounted At             |
+| ---------------------- | ----------------------- | ---------------------- |
+| [dm-crypt]             | `/dev/nvme0n1p2`        | `/dev/mapper/cryptlvm` |
+| [LVM]                  | `/dev/mapper/cryptlvm`  | `/dev/MainVolGrp`      |
+| [Swap]                 | `/dev/MainVolGrp/swap`  | Enabled using `swapon` |
+| [Btrfs] `@root`        | `/dev/MainVolGrp/btrfs` | `/mnt`                 |
+| [Btrfs] `@home`        | `/dev/MainVolGrp/btrfs` | `/mnt/home`            |
+| [EFI system partition] | `/dev/nvme0n1p1`        | `/mnt/boot`            |
 
 With everything mounted correctly, go ahead and use `pacstrap` to install the
 base system along with any additional packages you'll want to be available. Be
@@ -283,12 +283,13 @@ start you off, here's the packages I like to install early, but obviously you
 can omit them or choose your own equivalents:
 
 -   Relevant firmware, CPU microcode, etc.
--   `lvm`
+-   `lvm2`
 -   `btrfs-progs`
 -   `efitools`
 -   `sbctl`
 -   `sbsigntools`
 -   `networkmanager`
+-   `base-devel`
 -   `man-db` and `man-pages`
 -   `tmux`
 -   `neovim`
@@ -442,7 +443,7 @@ Boot]. Consult the [mkinitcpio instructions] and make sure to do the following:
 
 1.  Add `/etc/cmdline.d/*.conf` files to set the [kernel parameters]:
     -   [`cryptdevice=UUID=XXX:cryptlvm`]
-    -   `root=/dev/mapper/MainVolGrp/btrfs`
+    -   `root=/dev/MainVolGrp/btrfs`
     -   [`rootflags=subvol=@root`]
     -   [`resume=/dev/MainVolGrp/swap`]
     -   Do *not* set `initrd` since `mkinitcpio` will add it for us
@@ -456,12 +457,6 @@ Boot]. Consult the [mkinitcpio instructions] and make sure to do the following:
 [`cryptdevice=UUID=XXX:cryptlvm`]: https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_the_boot_loader_2
 [`rootflags=subvol=@root`]: https://wiki.archlinux.org/title/Btrfs#Mounting_subvolume_as_root
 [`resume=/dev/MainVolGrp/swap`]: https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate#Pass_hibernate_location_to_initramfs
-
-#### Rebuild initramfs
-
-Don't forget to run `mkinitcpio -P` to rebuild your [initramfs] after you are
-done configuring it. Forgetting to do so likely means your system won't boot
-since it'll use the old [initramfs].
 
 ### rEFInd Boot Manager
 
@@ -478,12 +473,23 @@ Windows or macOS. There are also many [rEFInd themes] (my favorite is
 [rEFInd themes]: https://www.rodsbooks.com/refind/themes.html
 [refind-theme-regular]: https://github.com/bobafetthotmail/refind-theme-regular
 
-For our case, it also has built-in support to automaticaly sign itself with
-your MOK (and even create an MOK for you). Follow the instructions for [Secure
-Boot with rEFInd]. Note that you may need to set up an icon yourself since
-rEFInd can't automatically discern one from a [unified kernel image].
+Follow the instructions for [Secure Boot with rEFInd]. Very conveniently,
+[rEFInd] has built-in support to automatically sign itself with your MOK. If
+you already created an MOK, put it in the correct location for [rEFInd] to use.
+Otherwise, [rEFInd] will generate a new MOK for you, and you'll need to make
+sure you sign your [unified kernel image] with the MOK. Note that you may need
+to set up an icon yourself since rEFInd can't automatically discern one from a
+[unified kernel image].
 
 [Secure Boot with rEFInd]: https://wiki.archlinux.org/title/REFInd#Secure_Boot
+
+### Rebuild initramfs
+
+Don't forget to run `mkinitcpio -P` to rebuild your [initramfs] after you are
+done configuring [mkinitcpio]. This includes potentially needing to resign it
+if you generated the MOK when setting up [rEFInd]. Forgetting to do so likely
+means your system won't boot since it'll use the old [initramfs] that's not
+configured correctly.
 
 ### Reboot
 
