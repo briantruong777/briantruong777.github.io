@@ -368,11 +368,13 @@ up-to-date one, so I recommended using it over [PreLoader].
     their own. However, this could brick your machine if it needs to execute
     firmware signed only with Microsoft/vendor keys. You have been warned.
     Supposedly the Framework Laptop 13 (AMD 7040) supports Secure Boot [without
-    any Microsoft/vendor keys].
+    any Microsoft/vendor keys], but it may prevent applying [future firmware
+    updates].
 
 [PreLoader]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#PreLoader
 [replace the Microsoft/vendor keys]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#Using_your_own_keys
 [without any Microsoft/vendor keys]: https://community.frame.work/t/solved-secure-boot-and-custom-keys-on-the-amd-motherboard/38362
+[future firmware updates]: https://community.frame.work/t/secureboot-setup-mode/14889
 
 The way [shim] works is that:
 
@@ -409,7 +411,7 @@ Arch Linux, [mkinitcpio] is the default way to create the [initramfs]. In our
 case, we need to ensure that the appropriate [hooks] are set in
 `/etc/mkinitcpio.conf`:
 
--   [`lvm2` and `encrypt` hooks]
+-   [`lvm2` and `encrypt` hooks] ([mkinitcpio example])
 -   [`resume` hook]
 -   [`microcode` hook]
 -   `keyboard` and `keymap` must be before `encrypt` for typing your password
@@ -419,6 +421,7 @@ case, we need to ensure that the appropriate [hooks] are set in
 [mkinitcpio]: https://wiki.archlinux.org/title/Mkinitcpio
 [hooks]: https://wiki.archlinux.org/title/Mkinitcpio#Common_hooks
 [`lvm2` and `encrypt` hooks]: https://wiki.archlinux.org/title/Dm-crypt/System_configuration#mkinitcpio
+[mkinitcpio example]: https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Configuring_mkinitcpio_3
 [`resume` hook]: https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate#Configure_the_initramfs
 [`microcode` hook]: https://wiki.archlinux.org/title/Microcode#mkinitcpio
 
@@ -495,6 +498,8 @@ configured correctly.
 
 TODO: Think about reordering rEFInd and initramfs since need MOK to be
 generated first?
+
+TODO: Figure out if `sbctl` or `sbsigntools` is even needed
 
 TODO: Add instructions on using `makepkg` since we need it for `signed-shim`
 
