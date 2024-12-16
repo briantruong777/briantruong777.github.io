@@ -493,6 +493,11 @@ configured correctly.
 
 ### Reboot
 
+TODO: Think about reordering rEFInd and initramfs since need MOK to be
+generated first?
+
+TODO: Add instructions on using `makepkg` since we need it for `signed-shim`
+
 Now that everything is set up correctly (supposedly), you should be able to
 exit the chroot environment, `umount -R /mnt` everything, and simply `reboot`
 your machine. If your system boots up, great you did it! If it didn't, well,
