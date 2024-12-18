@@ -295,6 +295,8 @@ can omit them or choose your own equivalents:
     -   Mainly needed for [rEFInd] to sign its binaries for you
 -   `mokutil`
     -   Tool for updating [shim]'s database
+-   `refind`
+    -   [rEFInd], our boot manager of choice
 -   `networkmanager`
     -   All-in-one network management program
 -   `base-devel`
@@ -462,9 +464,9 @@ to sign itself. I find `sbctl` is more user-friendly, so I really only install
 Like with any program that's been around a while, there's multiple versions of
 the [shim]. More importantly, we need a specific version that has been signed
 with Microsoft's key otherwise [Secure Boot] won't allow it to run. You can
-find such a version via the [AUR] which has the [shim-signed] package. Consider
-installing [paru] first since it makes it way more convenient to install stuff
-from the [AUR].
+find such a version via the [AUR] which has the [shim-signed] package. You'll
+likely need to use `runuser -u nobody makepkg` since `makepkg` doesn't allow
+running as the root user.
 
 TODO: Link to the later AUR section
 
@@ -547,21 +549,21 @@ Windows or macOS. There are also many [rEFInd themes] (my favorite is
 
 Follow the instructions for [Secure Boot with rEFInd]. Very conveniently,
 [rEFInd] has built-in support to automatically sign itself with your MOK using
-`sbsign`. You can either let [rEFInd] create its own keys, or you can copy your
-`sbctl` generated keys to `/etc/refind.d/keys/` for [rEFInd] to use. Note that
-you may need to set up an icon yourself since rEFInd can't automatically
-discern one from a [unified kernel image].
+`sbsign`. You can either let [rEFInd] create its own keys and import them into
+`sbctl`, or you can copy your `sbctl` generated keys to `/etc/refind.d/keys/`
+for [rEFInd] to use. Note that you may need to set up an icon yourself since
+rEFInd can't automatically discern one from a [unified kernel image].
 
 [Secure Boot with rEFInd]: https://wiki.archlinux.org/title/REFInd#Secure_Boot
 
 ### Rebuild initramfs
 
 Don't forget to run `mkinitcpio -P` to rebuild your [initramfs] after you are
-done configuring [mkinitcpio]. This includes potentially needing to resign it
-if you generated the MOK when setting up [rEFInd]. Forgetting to do so likely
-means your system won't boot since it'll use the old [initramfs] that's not
-configured correctly. You may also want to use `sbctl verify` to confirm that
-the [unified kernel image] was signed properly.
+done configuring [mkinitcpio]. This includes potentially needing to re-sign it
+with your MOK. Forgetting to do so likely means your system won't boot since
+it'll use the old [initramfs] that's not configured/signed correctly. You may
+also want to use `sbctl verify` to confirm that the [unified kernel image] was
+signed properly.
 
 ### Enroll MOK
 
@@ -571,10 +573,24 @@ only buffers the changes for the next reboot since it can't make any changes on
 its own. If you prefer, you can also do a lot of the same actions by booting
 MokManager directly in UEFI, but I find `mokutil` is more convenient.
 
-Regardless, when you boot, MokManager may popup if [shim] is unable to execute
-your boot loader, in which case, you need to use the MokManager's UI to find
-the key and add it. After this, the [shim] won't need to invoke MokManager
-anymore and things should just work.
+Depending on whether you relied on [rEFInd] or [sbctl] to generate your MOK,
+they will be in one of these locations:
+
+-   `/etc/refind.d/keys/`
+-   `/var/lib/sbctl/keys/`
+
+If you did generate the key using `sbctl`, you'll probably need to convert it
+to the correct format for `mokutil` with:
+
+```sh
+$ openssl x509 -outform der -in /var/lib/sbctl/keys/db/db.pem -out /tmp/sbctl_db.crt
+```
+
+When you boot, MokManager will pop up if [shim] is unable to execute your boot
+loader, in which case, you need to use the MokManager's UI to find the key and
+add it. After this, the [shim] won't need to invoke MokManager for your boot
+loader, but you may still have problems if your kernel wasn't signed properly
+or its MOK wasn't added using `mokutil`.
 
 ### Reboot
 
