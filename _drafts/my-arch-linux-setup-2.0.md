@@ -457,6 +457,20 @@ There's also the `sbsigntools` package which has various tools including
 to sign itself. I find `sbctl` is more user-friendly, so I really only install
 `sbsigntools` for the integration with [rEFInd].
 
+#### Downloading the shim
+
+Like with any program that's been around a while, there's multiple versions of
+the [shim]. More importantly, we need a specific version that has been signed
+with Microsoft's key otherwise [Secure Boot] won't allow it to run. You can
+find such a version via the [AUR] which has the [shim-signed] package. Consider
+installing [paru] first since it makes it way more convenient to install stuff
+from the [AUR].
+
+TODO: Link to the later AUR section
+
+[shim-signed]: https://aur.archlinux.org/packages/shim-signed/
+[paru]: https://github.com/Morganamilo/paru
+
 ### Initramfs
 
 [Initramfs] contains all files necessary during the early boot process before
@@ -563,8 +577,6 @@ the key and add it. After this, the [shim] won't need to invoke MokManager
 anymore and things should just work.
 
 ### Reboot
-
-TODO: Add instructions on using `makepkg` since we need it for `signed-shim`
 
 Now that everything is set up correctly (supposedly), you should be able to
 exit the chroot environment, `umount -R /mnt` everything, and simply `reboot`
