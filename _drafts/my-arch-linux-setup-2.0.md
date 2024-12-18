@@ -285,23 +285,35 @@ can omit them or choose your own equivalents:
 
 -   Relevant firmware, CPU microcode, etc.
 -   `lvm2`
+    -   Tools for [LVM]
 -   `btrfs-progs`
--   `efitools`
+    -   Tools for [Btrfs]
 -   `sbctl`
+    -   Tool for [Secure Boot]
 -   `sbsigntools`
+    -   More tooling for [Secure Boot]
+    -   Mainly needed for [rEFInd] to sign its binaries for you
 -   `mokutil`
+    -   Tool for updating [shim]'s database
 -   `networkmanager`
+    -   All-in-one network management program
 -   `base-devel`
+    -   Tools needed for compiling packages
 -   `man-db` and `man-pages`
+    -   man pages
 -   `tmux`
+    -   Terminal multiplexer
+    -   Enables multiple terminals before you have a desktop environment
 -   `neovim`
--   `fish` (also `python` for parsing man pages)
+    -   Fork of `vim` that has better defaults
+-   `fish` (also `python` for automatic parsing of man pages)
+    -   Friendly interactive shell with nice default behavior
 
 ## Configure the system
 
 And now the fun part where you have to configure everything correctly otherwise
 your system won't boot properly and you will have no clue what the heck went
-wrong so you desparately try rerunning all sorts of commands until you are
+wrong so you desperately try rerunning all sorts of commands until you are
 forced to confront the fact that you have no option left except to delete
 everything and start over from the beginning. But anyway, I'm sure that won't
 happen to you, so no need to worry.
@@ -404,6 +416,47 @@ Be sure to use a boot manager that actually enforces the same [Secure Boot]
 requirements otherwise it'll defeat the point of this whole exercise (e.g.
 [rEFInd]).
 
+#### Tooling
+
+`sbctl` is a very nice tool for working with your computer's [Secure Boot]
+settings. That being said, be careful you don't accidentally break your system
+with it.
+
+Installing `sbctl` also adds pacman and [mkinitcpio] hooks that will sign
+updated binaries and the [unified kernel image] automatically. However, you
+need to make sure you create/add your keys to `sbctl` properly.
+
+The main commands you'll use:
+
+-   `sbctl status`
+    -   Reports the current [Secure Boot] state of your computer
+-   `sbctl verify`
+    -   Lists relevant binaries and whether they are signed or not
+-   `sbctl create-keys`
+    -   Creates keys to be enrolled in UEFI and used to sign binaries
+-   `sbctl import-keys`
+    -   Import keys rather than creating them
+-   `sbctl sign`
+    -   Sign binaries with the created keys
+    -   The [sbctl mkinitcpio hook] calls this
+-   `sbctl sign-all`
+    -   Sign all binaries that were previously passed to `sbctl sign --save`
+    -   The [sbctl pacman hook] calls this
+-   `sbctl enroll-keys`
+    -   Add the created keys to UEFI
+    -   If you are using the [shim], you don't need this since you will leave
+        the existing UEFI keys alone
+    -   Be careful with this as you could break your system if you use it
+        incorrectly
+
+[sbctl mkinitcpio hook]: https://github.com/Foxboron/sbctl/blob/master/contrib/mkinitcpio/sbctl
+[sbctl pacman hook]: https://github.com/Foxboron/sbctl/blob/master/contrib/pacman/ZZ-sbctl.hook
+
+There's also the `sbsigntools` package which has various tools including
+`sbsign` that is pretty commonly used. In particular [rEFInd] will use `sbsign`
+to sign itself. I find `sbctl` is more user-friendly, so I really only install
+`sbsigntools` for the integration with [rEFInd].
+
 ### Initramfs
 
 [Initramfs] contains all files necessary during the early boot process before
@@ -453,8 +506,8 @@ Boot]. Consult the [mkinitcpio instructions] and make sure to do the following:
     -   [`resume=/dev/MainVolGrp/swap`]
     -   Do *not* set `initrd` since `mkinitcpio` will add it for us
 2.  Update the `/etc/mkinitcpio.d/linux.preset` file
-3.  Ensure `sbctl` is installed which sets up a pacman hook to automatically
-    sign updated EFI binaries
+3.  Ensure `sbctl` is set up correctly so it automatically signs the [unified
+    kernel image] whenever `mkinitcpio` is run.
 
 [unified kernel image]: https://wiki.archlinux.org/title/Unified_kernel_image
 [mkinitcpio instructions]: https://wiki.archlinux.org/title/Unified_kernel_image#mkinitcpio
@@ -479,12 +532,11 @@ Windows or macOS. There are also many [rEFInd themes] (my favorite is
 [refind-theme-regular]: https://github.com/bobafetthotmail/refind-theme-regular
 
 Follow the instructions for [Secure Boot with rEFInd]. Very conveniently,
-[rEFInd] has built-in support to automatically sign itself with your MOK. If
-you already created an MOK, put it in the correct location for [rEFInd] to use.
-Otherwise, [rEFInd] will generate a new MOK for you, and you'll need to make
-sure you sign your [unified kernel image] with the MOK. Note that you may need
-to set up an icon yourself since rEFInd can't automatically discern one from a
-[unified kernel image].
+[rEFInd] has built-in support to automatically sign itself with your MOK using
+`sbsign`. You can either let [rEFInd] create its own keys, or you can copy your
+`sbctl` generated keys to `/etc/refind.d/keys/` for [rEFInd] to use. Note that
+you may need to set up an icon yourself since rEFInd can't automatically
+discern one from a [unified kernel image].
 
 [Secure Boot with rEFInd]: https://wiki.archlinux.org/title/REFInd#Secure_Boot
 
@@ -494,14 +546,23 @@ Don't forget to run `mkinitcpio -P` to rebuild your [initramfs] after you are
 done configuring [mkinitcpio]. This includes potentially needing to resign it
 if you generated the MOK when setting up [rEFInd]. Forgetting to do so likely
 means your system won't boot since it'll use the old [initramfs] that's not
-configured correctly.
+configured correctly. You may also want to use `sbctl verify` to confirm that
+the [unified kernel image] was signed properly.
+
+### Enroll MOK
+
+As described earlier, you will need to add any MOKs you used for signing EFI
+binaries to the [shim]. You can use `mokutil` to do this. Note that `mokutil`
+only buffers the changes for the next reboot since it can't make any changes on
+its own. If you prefer, you can also do a lot of the same actions by booting
+MokManager directly in UEFI, but I find `mokutil` is more convenient.
+
+Regardless, when you boot, MokManager may popup if [shim] is unable to execute
+your boot loader, in which case, you need to use the MokManager's UI to find
+the key and add it. After this, the [shim] won't need to invoke MokManager
+anymore and things should just work.
 
 ### Reboot
-
-TODO: Think about reordering rEFInd and initramfs since need MOK to be
-generated first?
-
-TODO: Figure out if `sbctl` or `sbsigntools` is even needed
 
 TODO: Add instructions on using `makepkg` since we need it for `signed-shim`
 
