@@ -473,8 +473,10 @@ set up this early. You can build it manually using something like:
 $ cd /tmp
 $ curl -O https://aur.archlinux.org/cgit/aur.git/snapshot/shim-signed.tar.gz
 $ tar -xzf shim-signed.tar.gz
+$ chmod 777 shim-signed
 $ cd shim-signed
-$ runuser -u nobody makepkg -i
+$ runuser -u nobody makepkg
+$ pacman -U shim-signed*.pkg.tar.*
 ```
 
 [shim-signed]: https://aur.archlinux.org/packages/shim-signed/
@@ -530,7 +532,7 @@ Boot]. Consult the [mkinitcpio instructions] and make sure to do the following:
     -   Do *not* set `initrd` since `mkinitcpio` will add it for us
 2.  Update the `/etc/mkinitcpio.d/linux.preset` file
 3.  Ensure `sbctl` is installed so it automatically signs the [unified kernel
-    image] whenever `mkinitcpio` is run
+    image] with its imported/generated keys whenever `mkinitcpio` is run
 
 [unified kernel image]: https://wiki.archlinux.org/title/Unified_kernel_image
 [mkinitcpio instructions]: https://wiki.archlinux.org/title/Unified_kernel_image#mkinitcpio
@@ -581,7 +583,7 @@ only buffers the changes for the next reboot since it can't make any changes
 until then. If you prefer, you can usually do the same actions by booting
 MokManager directly in [UEFI], but I find `mokutil` is more convenient.
 
-Depending on whether you relied on [rEFInd] or [sbctl] to generate your MOK,
+Depending on whether you relied on [rEFInd] or `sbctl` to generate your MOK,
 they will probably be in one of these locations:
 
 -   `/etc/refind.d/keys/`
@@ -594,11 +596,14 @@ to the correct format for `mokutil` with:
 $ openssl x509 -outform der -in /var/lib/sbctl/keys/db/db.pem -out /tmp/sbctl_db.crt
 ```
 
-When you boot, MokManager will pop up if [shim] is unable to execute your boot
-loader, in which case, you need to use the MokManager's UI to find the key and
-add it. After this, the [shim] won't need to invoke MokManager for your boot
-loader, but you may still have problems if your kernel wasn't signed properly
-or its MOK wasn't added.
+After using `mokutil`, when you boot, MokManager will prompt you to confirm you
+meant to add the keys.
+
+If for whatever reason the [shim] is unable to execute your boot loader,
+MokManager will also pop up and let you pick a binary/key stored in the [EFI
+system partition] to add to its database. After this, the [shim] won't need to
+invoke MokManager for your boot loader, but you may still have problems if your
+kernel wasn't signed properly or its MOK wasn't added.
 
 ### Reboot
 
