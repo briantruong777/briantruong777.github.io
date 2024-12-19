@@ -56,15 +56,7 @@ setup:
     -   [fish] (friendly interactive shell)
 
 [UEFI]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface
-[Secure Boot]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot
-[shim]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#shim
-[rEFInd]: https://wiki.archlinux.org/title/REFInd
-[GPT]: https://wiki.archlinux.org/title/Partitioning#GUID_Partition_Table
-[EFI system partition]: https://wiki.archlinux.org/title/EFI_system_partition
 [SystemRescue]: https://www.system-rescue.org
-[dm-crypt]: https://wiki.archlinux.org/title/Dm-crypt
-[LVM]: https://wiki.archlinux.org/title/LVM
-[Btrfs]: https://wiki.archlinux.org/title/Btrfs
 [Snapper]: https://wiki.archlinux.org/title/Snapper
 [Hibernation]: https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate#Hibernation
 [NetworkManager]: https://wiki.archlinux.org/title/NetworkManager
@@ -114,7 +106,6 @@ kernel is somewhat covered.
     distro actually designed for atomic updates/rollbacks like [Fedora
     Silverblue] or [NixOS].
 
-[GRUB]: https://wiki.archlinux.org/title/GRUB
 [Fedora Silverblue]: https://fedoraproject.org/atomic-desktops/silverblue
 [NixOS]: https://nixos.org
 
@@ -131,8 +122,6 @@ used to suggest using a Swap file instead, but it's a bit finicky to set up on
 it on-the-fly. Plus, having a single [LVM] partition means we can
 encrypt/decrypt the Swap and root file system in one fell swoop. Finally, [LVM]
 gives much more flexibility in the future for partitioning shenanigans.
-
-[Swap]: https://wiki.archlinux.org/title/Swap
 
 A minor difference from the original guide is that I use [Snapper] to
 automatically take [Btrfs] snapshots, so the layout of [Btrfs] subvolumes is a
@@ -151,10 +140,11 @@ We will only need 2 partitions since the primary partition will have [LVM]
 setup. Be sure to use the [GPT] partitioning scheme which is the standard
 nowadays despite `fdisk` defaulting to MBR (or just use `gdisk` or `cfdisk`).
 
-[GPT]: https://wiki.archlinux.org/title/Partitioning#GUID_Partition_Table
-
 1.  [EFI system partition] (2 GiB)
 2.  Primary partition (remaining space)
+
+[GPT]: https://wiki.archlinux.org/title/Partitioning#GUID_Partition_Table
+[EFI system partition]: https://wiki.archlinux.org/title/EFI_system_partition
 
 All [UEFI] systems require an [EFI system partition]. In our case, we are going
 to be mounting this partition as `/efi` on our system. We will store our kernel
@@ -169,6 +159,7 @@ For our primary partition, we first need to encrypt it using [dm-crypt]. There
 are [many possible encryption setups], but the one we will use is [LVM on LUKS]
 for the reasons described earlier.
 
+[dm-crypt]: https://wiki.archlinux.org/title/Dm-crypt
 [many possible encryption setups]: https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system
 [LVM on LUKS]: https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#LVM_on_LUKS
 
@@ -195,11 +186,15 @@ Now create an [LVM] physical volume on the `/dev/mapper/` entry for the
 encrypted partition, and put it in a volume group. Then create two logical
 volumes in the volume group:
 
+[LVM]: https://wiki.archlinux.org/title/LVM
+
 1.  [Swap] logical volume
 2.  [Btrfs] logical volume
 
 Set up and enable [Swap] the appropriate logical volume. [Btrfs] will be a bit
 more complicated.
+
+[Swap]: https://wiki.archlinux.org/title/Swap
 
 ### Btrfs
 
@@ -209,6 +204,7 @@ efficient snapshotting, and transparent compression. These features do come at
 a performance cost, and some of them are downright broken like [RAID5/6], but
 at least for my purposes, the good outweighs the bad.
 
+[Btrfs]: https://wiki.archlinux.org/title/Btrfs
 [RAID5/6]: https://btrfs.readthedocs.io/en/stable/btrfs-man5.html#raid56-status-and-recommended-practices
 
 One big weakness of [Btrfs] is that it behaves poorly when out of disk space
@@ -339,12 +335,14 @@ on its own. However, we first need to talk about [Secure Boot].
 
 ### Secure Boot
 
-[Secure Boot] is a UEFI feature that protects against executing unapproved
+[Secure Boot] is a [UEFI] feature that protects against executing unapproved
 binaries during the boot process. This mainly serves to prevent malware from
 remotely installing itself inside the boot loader, boot manager, or kernel
 where it can easily hide from your OS. Note that [Secure Boot] can simply be
-disabled in the UEFI interface, so it is primarily a deterrent for remote
+disabled in the [UEFI] interface, so it is primarily a deterrent for remote
 attackers who cannot access the pre-boot environment.[^uefi-password]
+
+[Secure Boot]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot
 
 [^uefi-password]: Even if you add a BIOS/UEFI password, many machines have
     password reset procedures that only require physical access. Even ignoring
@@ -360,7 +358,7 @@ contain only basic explanations and gloss over many details.
 
 [Dealing with Secure Boot]: https://www.rodsbooks.com/efi-bootloaders/secureboot.html
 
-At its core, [Secure Boot] means that your computer's UEFI will only boot
+At its core, [Secure Boot] means that your computer's [UEFI] will only boot
 binaries or accept keys that have been approved by Microsoft. This would
 usually lock out Linux entirely, but there are specific third-party binaries
 that Microsoft has signed which allow for booting other binaries. The two that
@@ -368,6 +366,9 @@ matter for us are:
 
 1.  [shim]
 2.  [PreLoader]
+
+[shim]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#shim
+[PreLoader]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#PreLoader
 
 Both of these allow end-users to add additional binaries and keys beyond the
 Microsoft/vendor ones. This does weaken the chain of trust since you might get
@@ -387,14 +388,13 @@ up-to-date one, so I recommended using it over [PreLoader].
     any Microsoft/vendor keys], but it may prevent applying [future firmware
     updates].
 
-[PreLoader]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#PreLoader
 [replace the Microsoft/vendor keys]: https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#Using_your_own_keys
 [without any Microsoft/vendor keys]: https://community.frame.work/t/solved-secure-boot-and-custom-keys-on-the-amd-motherboard/38362
 [future firmware updates]: https://community.frame.work/t/secureboot-setup-mode/14889
 
 The way [shim] works is that:
 
-1.  UEFI starts the [shim]
+1.  [UEFI] starts the [shim]
 2.  [shim] starts your boot manager
 3.  Your boot manager boots your kernel
 
@@ -435,7 +435,7 @@ The main commands you'll use:
 -   `sbctl verify`
     -   Lists relevant binaries and whether they are signed or not
 -   `sbctl create-keys`
-    -   Creates keys to be enrolled in UEFI and used to sign binaries
+    -   Creates keys to be enrolled in [UEFI] and used to sign binaries
 -   `sbctl import-keys`
     -   Import keys rather than creating them
 -   `sbctl sign`
@@ -445,9 +445,9 @@ The main commands you'll use:
     -   Sign all binaries that were previously passed to `sbctl sign --save`
     -   The [sbctl pacman hook] calls this
 -   `sbctl enroll-keys`
-    -   Add the created keys to UEFI
+    -   Add the created keys to [UEFI]
     -   If you are using the [shim], you don't need this since you will leave
-        the existing UEFI keys alone
+        the existing [UEFI] keys alone
     -   Be careful with this as you could break your system if you use it
         incorrectly
 
@@ -544,6 +544,8 @@ out-of-the-box, even in surprisingly complex situations like dual-booting with
 Windows or macOS. There are also many [rEFInd themes] (my favorite is
 [refind-theme-regular]).
 
+[GRUB]: https://wiki.archlinux.org/title/GRUB
+[rEFInd]: https://wiki.archlinux.org/title/REFInd
 [rEFInd themes]: https://www.rodsbooks.com/refind/themes.html
 [refind-theme-regular]: https://github.com/bobafetthotmail/refind-theme-regular
 
@@ -571,7 +573,7 @@ As described earlier, you will need to add any MOKs you used for signing EFI
 binaries to the [shim]. You can use `mokutil` to do this. Note that `mokutil`
 only buffers the changes for the next reboot since it can't make any changes on
 its own. If you prefer, you can also do a lot of the same actions by booting
-MokManager directly in UEFI, but I find `mokutil` is more convenient.
+MokManager directly in [UEFI], but I find `mokutil` is more convenient.
 
 Depending on whether you relied on [rEFInd] or [sbctl] to generate your MOK,
 they will be in one of these locations:
