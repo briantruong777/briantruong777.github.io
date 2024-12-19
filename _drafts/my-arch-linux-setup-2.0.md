@@ -456,19 +456,26 @@ The main commands you'll use:
 
 There's also the `sbsigntools` package which has various tools including
 `sbsign` that is pretty commonly used. In particular [rEFInd] will use `sbsign`
-to sign itself. I find `sbctl` is more user-friendly, so I really only install
-`sbsigntools` for the integration with [rEFInd].
+to sign itself. I find `sbctl` is more user-friendly and comes with useful
+[mkinitcpio] and pacman hooks, so I really only install `sbsigntools` for the
+integration with [rEFInd].
 
 #### Downloading the shim
 
-Like with any program that's been around a while, there's multiple versions of
-the [shim]. More importantly, we need a specific version that has been signed
-with Microsoft's key otherwise [Secure Boot] won't allow it to run. You can
-find such a version via the [AUR] which has the [shim-signed] package. You'll
-likely need to use `runuser -u nobody makepkg` since `makepkg` doesn't allow
-running as the root user.
+Like with any program that's been around a while, there's multiple copies and
+versions of the [shim] binaries. More importantly, we need one that has been
+signed with Microsoft's key otherwise [Secure Boot] won't allow it to run. You
+can download one via the [shim-signed] package in the [AUR]. Usually I'd use an
+[AUR] helper like [paru] to install the package, but it's a bit of a pain to
+set up this early. You can build it manually using something like:
 
-TODO: Link to the later AUR section
+```sh
+$ cd /tmp
+$ curl -O https://aur.archlinux.org/cgit/aur.git/snapshot/shim-signed.tar.gz
+$ tar -xzf shim-signed.tar.gz
+$ cd shim-signed
+$ runuser -u nobody makepkg -i
+```
 
 [shim-signed]: https://aur.archlinux.org/packages/shim-signed/
 [paru]: https://github.com/Morganamilo/paru
@@ -522,8 +529,8 @@ Boot]. Consult the [mkinitcpio instructions] and make sure to do the following:
     -   [`resume=/dev/MainVolGrp/swap`]
     -   Do *not* set `initrd` since `mkinitcpio` will add it for us
 2.  Update the `/etc/mkinitcpio.d/linux.preset` file
-3.  Ensure `sbctl` is set up correctly so it automatically signs the [unified
-    kernel image] whenever `mkinitcpio` is run.
+3.  Ensure `sbctl` is installed so it automatically signs the [unified kernel
+    image] whenever `mkinitcpio` is run
 
 [unified kernel image]: https://wiki.archlinux.org/title/Unified_kernel_image
 [mkinitcpio instructions]: https://wiki.archlinux.org/title/Unified_kernel_image#mkinitcpio
@@ -561,22 +568,21 @@ rEFInd can't automatically discern one from a [unified kernel image].
 ### Rebuild initramfs
 
 Don't forget to run `mkinitcpio -P` to rebuild your [initramfs] after you are
-done configuring [mkinitcpio]. This includes potentially needing to re-sign it
-with your MOK. Forgetting to do so likely means your system won't boot since
-it'll use the old [initramfs] that's not configured/signed correctly. You may
-also want to use `sbctl verify` to confirm that the [unified kernel image] was
-signed properly.
+done configuring [mkinitcpio]. Forgetting to do so likely means your system
+won't boot since it'll use the old [initramfs] that's not configured/signed
+correctly. Assuming you registered/generated your MOK with `sbctl`, you can use
+`sbctl verify` to confirm that the [unified kernel image] was signed properly.
 
 ### Enroll MOK
 
 As described earlier, you will need to add any MOKs you used for signing EFI
 binaries to the [shim]. You can use `mokutil` to do this. Note that `mokutil`
-only buffers the changes for the next reboot since it can't make any changes on
-its own. If you prefer, you can also do a lot of the same actions by booting
+only buffers the changes for the next reboot since it can't make any changes
+until then. If you prefer, you can usually do the same actions by booting
 MokManager directly in [UEFI], but I find `mokutil` is more convenient.
 
 Depending on whether you relied on [rEFInd] or [sbctl] to generate your MOK,
-they will be in one of these locations:
+they will probably be in one of these locations:
 
 -   `/etc/refind.d/keys/`
 -   `/var/lib/sbctl/keys/`
@@ -592,7 +598,7 @@ When you boot, MokManager will pop up if [shim] is unable to execute your boot
 loader, in which case, you need to use the MokManager's UI to find the key and
 add it. After this, the [shim] won't need to invoke MokManager for your boot
 loader, but you may still have problems if your kernel wasn't signed properly
-or its MOK wasn't added using `mokutil`.
+or its MOK wasn't added.
 
 ### Reboot
 
