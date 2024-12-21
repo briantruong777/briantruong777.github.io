@@ -614,3 +614,48 @@ that's just how it goes sometimes, and you'll have to go troubleshoot what
 exactly went wrong.
 
 ## Post-installation
+
+At this point, your system should be capable of booting on its own, connecting
+to the internet, and installing any package you like, so feel free to close
+this guide and do whatever you want. The rest of this guide is effectively just
+a list of software and other [general recommendations] that I like to follow.
+
+[general recommendations]: https://wiki.archlinux.org/title/General_recommendations
+
+### User account
+
+Currently the only user you can log in as is the root user which is not a good
+user to use regularly. You either run the risk of accidentally breaking your
+system or someone hacking your account and now having full access to your
+entire system. See [users and groups] documentation on how to create your own
+user account. Also consider adding your user to the `wheel` group which
+conventionally has access to administrate the system and use [sudo].
+
+[users and groups]: https://wiki.archlinux.org/title/Users_and_groups
+
+As you might've guessed, I recommend installing [sudo] so your new user account
+can actually administrate the system as needed. Once this is done and you've
+tested it works, you can now [disable root login] to prevent anyone from
+logging in directly as the root user.
+
+[sudo]: https://wiki.archlinux.org/title/Sudo
+[disable root login]: https://wiki.archlinux.org/title/Sudo#Disable_root_login
+
+On a separate note, it's also nice to [disable the password timeout] for [sudo]
+in case you have a long running script (e.g., [AUR] helper) that needs [sudo]
+access at the end. This lets you come back to your computer and type in your
+password to continue the without failing the script.
+
+```
+Defaults passwd_timeout=0
+```
+
+[disable the password timeout]: https://wiki.archlinux.org/title/Sudo#Disable_password_prompt_timeout
+
+Finally, you may want to install [polkit] which is a framework for allowing
+unprivileged users to execute certain commands without giving full root access
+like [sudo] does. In particular, it allows you to run `poweroff` and `reboot`
+without needing [sudo]. [Polkit] also considers the `wheel` group as an
+administrative group.
+
+[polkit]: https://wiki.archlinux.org/title/Polkit
