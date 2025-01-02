@@ -1,6 +1,12 @@
 ---
 ---
 
+**This post now has a [new version] that supersedes this one.**
+
+[new version]: {% post_url 2025-01-01-my-arch-linux-setup-2.0 %}
+
+---
+
 I've been a big fan of [Arch Linux] for a long time now. Though it is a lot of
 work to set up, it offers a great opportunity to learn exactly how everything
 fits together in a Linux system. There's also that pleasant satisfaction when
