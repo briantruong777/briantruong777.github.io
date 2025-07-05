@@ -861,9 +861,20 @@ lots of icons useful for programmers (though this is unnecessary for some
 terminal emulators like [kitty]). To compare between them, try out
 <https://www.programmingfonts.org>.
 
+-   [Recursive Mono]
+    -   `ttf-recursive`/`ttf-recursive-nerd`
+    -   Brush writing font with lots of style and personality
+    -   Can vary between refined & classy or chill & casual
+    -   My new favorite :)
+-   [Commit Mono]
+    -   `ttf-commit-mono`/`otf-commit-mono-nerd`
+    -   Engineered for readability to the point of being plain and boring
+    -   Features "smart kerning" for better readability
 -   [Hack]
     -   `ttf-hack`/`ttf-hack-nerd`
     -   Basically [DejaVu] with some alterations for source code
+    -   My old favorite (back when I didn't know it was just a repackaged
+        DejaVu)
 -   [Fira Code]
     -   `ttf-fira-code`/`ttf-firacode-nerd`
     -   [Fira] Mono with some alterations for source code
@@ -898,6 +909,8 @@ terminal emulators like [kitty]). To compare between them, try out
     -   Handcrafted, pragmatic font that is compact and IMO retro-futuristic
 
 [Nerd Fonts]: https://www.nerdfonts.com/
+[Recursive Mono]: https://www.recursive.design/
+[Commit Mono]: https://commitmono.com/
 [Hack]: https://sourcefoundry.org/hack
 [Fira Code]: https://github.com/tonsky/FiraCode
 [Monaspace]: https://monaspace.githubnext.com/
