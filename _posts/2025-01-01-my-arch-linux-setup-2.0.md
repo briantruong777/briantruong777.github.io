@@ -930,7 +930,7 @@ vulnerable.
 
 Nowadays, I use [Uncomplicated Firewall] (`ufw`) for this. As the name implies,
 it has simpler configuration than raw `iptables` or `nftables` usage and I
-don't find myself missing any of the more advance stuff. If you are ssh'd into
+don't find myself missing any of the more advanced stuff. If you are ssh'd into
 your machine, be sure to add an exception for that first to avoid accidentally
 locking yourself out.
 
