@@ -988,6 +988,20 @@ carefully.
 
 [Bluetooth]: https://wiki.archlinux.org/title/Bluetooth
 
+#### S.M.A.R.T.
+
+[S.M.A.R.T.] is a monitoring system built into most HDDs and SSDs that tracks
+various statistics for determining the health of the drive. Accessing this
+monitoring requires installing `smartmontools`, after which, you can use
+`smartctl` to directly query this information or run self-tests. Additionally,
+`smartmontools` includes the `smartd` systemd service which can regularly check
+S.M.A.R.T. statuses or run self-tests. You can configure `smartd` via the
+`/etc/smartd.conf` file. I recommend adding a `-n standby` to avoid `smartd`
+from spinning up your hard drives for no reason, but otherwise, I don't have
+much experience, so do your own research.
+
+[S.M.A.R.T.]: https://wiki.archlinux.org/title/S.M.A.R.T.
+
 #### Laptops
 
 With laptops, power usage and battery life are incredibly important, and
