@@ -880,10 +880,14 @@ so do be careful around such times.
         access the dock which is much nicer than needing to trigger overview
         mode first, especially when mouse-only.
     -   Set the `Click action` to `Focus or show previews`. The first click
-        will focus the app as usual, but the next click will pop-up previews of
-        the windows and you can pick one to focus.
+        will focus the last window of the app and the next click will pop-up
+        previews of the windows so you can pick a specific one to focus.
     -   Disable showing the trash can or any removable drives (unless you
         actually like this behavior of course).
+    -   Enable `Use built-in theme` to make things align with the default
+        theme. In particular, this enables showing multiple dots for each
+        window which is nice. Obviously if you use a custom theme, you probably
+        won't want to enable this.
 -   [Removable Drive Menu] (`gnome-shell-extensions`)
     -   Shows a tray icon if a removable drive is plugged in. Not sure why, but
         I just prefer seeing them up there rather than in the dock.
