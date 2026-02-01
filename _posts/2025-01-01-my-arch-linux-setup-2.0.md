@@ -743,8 +743,7 @@ Unless you are a masochist or allergic to GUIs, you probably want to install a
 install a plain [window manager]. I used to like [i3], but it was kind of a
 pain compared to something that just works out-of-the-box. Plus, I use [GNOME]
 and macOS at work, so it's just easier to go with [GNOME] for my personal setup
-too. I'm not going to bother explaining how to use [GNOME] since it's pretty
-simple.
+too.
 
 [desktop environment]: https://wiki.archlinux.org/title/Desktop_environment
 [window manager]: https://wiki.archlinux.org/title/Window_manager
@@ -782,6 +781,122 @@ need, but if you go with a [window manager], you'll have to add in more things
 like a display manager, status bar, screen lockers, notification daemon,
 application launcher, terminal emulator, audio system, etc. just to get a
 basic, functioning system.
+
+#### GNOME
+
+[GNOME] is a pretty standard [desktop environment], so it should be pretty easy
+to use out-of-the-box without any guidance. Regardless, I'm recording the
+settings/extensions I like here (mainly because I'll forget them otherwise).
+Yes, a lot of this is probably configurable via text files or scripts, but I
+personally prefer configuring GUI-related things via the GUI as the developers
+intended.
+
+##### Settings
+
+-   *Displays*
+    -   Enable variable refresh rate for monitors that support it. If you are
+        trying to save power, you should use a refresh rate as low as you can
+        bear.
+    -   Tint the screen red at night. Covering the actual sunset to sunrise
+        time range in the current location is my preferred setting for this.
+-   *Power*
+    -   Set the lid closing and power button behavior. I prefer suspending
+        since it's easy to undo in case of accidental presses.
+    -   Set the delay before turning the screen off. 10m is my usual since it
+        matches my phone.
+    -   Set the delay before suspending. I usually do 15m when on battery
+        power, 1h otherwise. You could disable it entirely for desktops, but
+        that'd be wasteful.
+-   *Multitasking*
+    -   Turn on `Hot Corner` and `Active Screen Edges` (the name is horrible,
+        this is just basic window tiling). These are convenient when going
+        mouse-only.
+    -   Switch to `Workspaces on all displays` and `Include apps from the
+        current workspace only`. This matches how I prefer to use workspaces,
+        i.e., each workspace has a totally isolated set of windows.
+    -   Dynamic number of workspaces. Not sure what the point is in
+        purposefully limiting yourself here.
+-   *Keyboard*
+    -   Add other languages (中文).
+    -   Under `Keyboard Shortcuts > Navigation`:
+        -   Set `Switch windows` or `Switch windows directly` to `Alt+Tab`.
+            This matches Windows and is more efficient in my opinion since the
+            default `Switch applications` will bring all the windows of the
+            application to the foreground even if you only wanted a particular
+            one. Use the `directly` version if you want to immediately bring
+            the highlighted window to the foreground so you can inspect it.
+            Otherwise, the default version will have a pop-up UI which is less
+            jarring and provides a better overview of all the windows.
+        -   Set `Switch applications` to `Super+Tab`. This matches macOS and
+            serves as a good alternative to `Switch windows` when you are
+            unsure which window you want or you genuinely want to bring all the
+            application's windows to the foreground. Before letting go, you can
+            still use `` Super+` `` to select windows of the currently
+            highlighted application.
+-   *Privacy & Security*
+    -   Set screen lock delay. I usually set it to match when the screen turns
+        off to avoid confusion when I think the screen is locked but actually
+        it's just off so I type my password into whatever random thing was open
+        when I last left my computer. No, don't ask how many times I've done
+        this before. Anyway, you can leave a short grace period if you want to
+        be able to "rescue" your machine before it locks.
+-   *System*
+    -   Enable 24-hour time.
+    -   Enable showing the week day in the clock at the top.
+    -   If you encrypted your primary partition, you can enable auto-login
+        since you would've already inputted your password during boot. Even
+        with this enabled, your password is still required at other times,
+        e.g., screen lock, suspend, etc.
+
+##### Tweaks
+
+For whatever reason, [GNOME] likes to keep some settings in a separate `Tweaks`
+app. You will need to install this separately as `gnome-tweaks`.
+
+-   *Windows*
+    -   Enable `Maximize` and `Minimize` title bar buttons. Not sure why these
+        are disabled by default, though admittedly, I don't use these often.
+    -   Enable `Resize with Secondary-Click`. This allows you to hold `Super`
+        and right-click and hold in order to resize windows. This nicely
+        complements the left-click behavior of moving a window regardless of
+        where you click.
+
+##### Extensions
+
+Though [GNOME] takes the opinionated route, it still supports *extensions* that
+can significantly change built-in functionality in fun ways. Unfortunately,
+they sometimes are a bit unstable, especially whenever [GNOME] has an update,
+so do be careful around such times.
+
+-   [AppIndicator] (`gnome-shell-extension-appindicator`)
+    -   Ensures that applications relying on other tray/panel icon frameworks
+        will still show an icon in [GNOME].
+-   [Bing Wallpaper] (`gnome-shell-extension-bing-wallpaper`)
+    -   Automatically sets the desktop wallpaper and lock screen as the [Bing
+        Image of the Day].
+-   [Dash to Dock] (`gnome-shell-extension-dash-to-dock`)
+    -   Takes the bottom dash panel out of overview mode and makes it a dock
+        akin to macOS. Allows you to simply move the mouse to the bottom to
+        access the dock which is much nicer than needing to trigger overview
+        mode first, especially when mouse-only.
+    -   Set the `Click action` to `Focus or show previews`. The first click
+        will focus the app as usual, but the next click will pop-up previews of
+        the windows and you can pick one to focus.
+    -   Disable showing the trash can or any removable drives (unless you
+        actually like this behavior of course).
+-   [Removable Drive Menu] (`gnome-shell-extensions`)
+    -   Shows a tray icon if a removable drive is plugged in. Not sure why, but
+        I just prefer seeing them up there rather than in the dock.
+-   [Weather O'Clock] (`gnome-shell-extension-weather-oclock`)
+    -   Shows the weather and temperature in an icon next to the date at the
+        top. You'll need to configure the location in the [GNOME] Weather app.
+
+[AppIndicator]: https://github.com/ubuntu/gnome-shell-extension-appindicator
+[Bing Wallpaper]: https://github.com/neffo/bing-wallpaper-gnome-extension
+[Bing Image of the Day]: https://bingwallpaper.microsoft.com/Windows/bing/bing-wallpaper/
+[Dash to Dock]: https://github.com/micheleg/dash-to-dock
+[Removable Drive Menu]: https://gitlab.gnome.org/GNOME/gnome-shell-extensions
+[Weather O'Clock]: https://github.com/CleoMenezesJr/weather-oclock
 
 ### Terminal and shell
 
