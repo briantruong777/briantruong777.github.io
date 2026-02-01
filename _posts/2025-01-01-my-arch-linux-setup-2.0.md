@@ -181,7 +181,7 @@ volumes in the volume group:
 1.  [Swap] logical volume
 2.  [Btrfs] logical volume
 
-Set up and enable [Swap] the appropriate logical volume. Technically speaking,
+Set up and enable [Swap] on the appropriate logical volume. Technically speaking,
 your [Swap] should be at least as big as your total RAM so that [hibernation]
 is guaranteed to successfully store all the memory. In practice however,
 compression does give a decent chance of success even with less space, so feel
@@ -244,8 +244,8 @@ the following [Btrfs] subvolumes:
 -   `@home` mounted at `/mnt/home`
 
 We keep `/home` in a separate subvolume to ensure that snapshots of system
-files don't include user files so rollbacks won't revert user files too. For
-the same reason, you could create a subvolume specifically for snapshots too.
+files don't include user files so rollbacks won't revert user files too. Feel
+free to create additional subvolumes to separate out other directories.
 You may also want to create separate subvolumes for disabling CoW in certain
 directories since [snapshotting can interfere] with that.
 
@@ -269,7 +269,7 @@ With everything mounted correctly, go ahead and use `pacstrap` to install the
 base system along with any additional packages you'll want to be available. Be
 sure to install everything needed to have internet access otherwise you won't
 be able to download any additional packages after booting into the system. To
-start you off, here's the packages I like to install, but obviously you can
+start you off, here are the packages I like to install, but obviously you can
 omit them or choose your own equivalents:
 
 -   Relevant firmware, CPU microcode, etc.
@@ -629,12 +629,12 @@ a list of software and other [general recommendations] that I like to follow.
 
 ### User account
 
-Currently the only user you can log in as is the root user which is not a good
-user to use regularly. You either run the risk of accidentally breaking your
-system or someone hacking your account and now having full access to your
+Currently the only user you can log in as is the root user which is a poor choice
+for regular usage. You either run the risk of accidentally breaking your
+system or someone hacking your account and gaining full access to your
 entire system. See [users and groups] documentation on how to create your own
 user account. Also consider adding your user to the `wheel` group which
-conventionally has access to administrate the system and use [sudo].
+conventionally has access to administrate the system by using [sudo].
 
 [users and groups]: https://wiki.archlinux.org/title/Users_and_groups
 
@@ -672,7 +672,7 @@ Finally, if you want the standard set of directories for Linux (`Downloads/`,
 
 ### Installing packages
 
-In the unlikely event you've somehow gotten this far without understanding what
+Just in case you've somehow gotten this far without understanding what
 you've been doing, [pacman] is Arch Linux's package manager which allows you to
 install lots of software from the official repository. Assuming you have an
 internet connection, [pacman] should just work out-of-the-box, but there are a
@@ -689,7 +689,8 @@ how you configure it, [reflector] will test the freshness and download speeds
 of all the Arch Linux repository mirrors and select the best ones to store into
 `/etc/pacmand.d/mirrorlist`. You could run this regularly, but I suggest
 configuring [reflector] and running it once when you first install, and then
-again whenever you travel or move to a new location.
+again whenever you travel or move to a new location. No need to up their
+bandwidth costs for basically no benefit.
 
 [reflector]: https://wiki.archlinux.org/title/Reflector
 
@@ -701,13 +702,13 @@ the [AUR] (Arch User Repository) comes in. The [AUR] is where anyone can upload
 packages (`PKGBUILD` and other needed files) which you can then download in
 order to build the package locally. This usually involves compiling the program
 from scratch, but some [AUR] packages just download an existing compiled binary
-and just rearrange it for installation.
+and rearrange it for installation.
 
 [AUR]: https://wiki.archlinux.org/title/Arch_User_Repository
 
-Now, before we get any further, let me repeat that. *Anyone* can upload
-packages to the [AUR]. Though a popular package is less likely to have anything
-harmful, there is no vetting process at all for any of these packages meaning
+Now, before we get any further, let me repeat that. **Anyone can upload
+packages to the [AUR].** Though a popular package is less likely to have anything
+harmful, there is no vetting process for any of these packages meaning
 it could just be malware. Even if you confirmed a package is safe now, a future
 update may introduce malicious code, so best practice is to inspect the diff
 before installing the update.
@@ -722,8 +723,9 @@ so do your research.
 [paru]: https://github.com/Morganamilo/paru
 
 For any of the [AUR helpers], you will still need to install them manually the
-first time. Afterwards, they can usually update themselves, but it's still good
-to know how to install [AUR] packages manually for when it occasionally fails.
+first time. Afterwards, they can usually update themselves, but they will
+occasionally fail for various reasons, so it's good
+to know how to install [AUR] packages manually.
 
 ```sh
 $ cd /tmp
@@ -778,17 +780,20 @@ Here are the desktop environments and window managers you may want to consider:
 If you go with a [desktop environment], it'll probably contain everything you
 need, but if you go with a [window manager], you'll have to add in more things
 like a display manager, status bar, screen lockers, notification daemon,
-application launcher, terminal emulator, audio system, etc.
+application launcher, terminal emulator, audio system, etc. just to get a
+basic, functioning system.
 
 ### Terminal and shell
 
 If you installed a [desktop environment], it probably comes with a default
 terminal emulator that should satisfy most people's needs. I personally have
 used [GNOME Terminal] extensively, and it's had all the features I've needed. I
-usually just rely on [GNOME]'s basic window management to deal with multiple
-terminals, and [tmux] when over ssh.
+haven't used GNOME's new terminal, [Ptyxis], but I'll assume it is reasonable
+as well. I usually just rely on [GNOME]'s basic window management to deal with
+multiple terminals, and [tmux] when over ssh.
 
 [GNOME Terminal]: https://help.gnome.org/users/gnome-terminal/stable/
+[Ptyxis]: https://gitlab.gnome.org/chergert/ptyxis
 [tmux]: https://wiki.archlinux.org/title/Tmux
 
 However, some other terminals you may want to consider are [Alacritty] and
@@ -797,9 +802,9 @@ fps for your terminal text output) and have up-to-date, modern sensibilities.
 [kitty] in particular is interesting because it can load the scrollback buffer
 or the output of the last command into your pager of choice which is great
 since usually I'd just rerun the command again and accept the shame from my
-inability to plan ahead. [kitty] annoyingly does not support using the mouse to
-click-and-drag the scrollbar, but it's other features like jumping to
-previous/next prompt make up for it.
+inability to plan ahead. Some of its other features like jumping to
+previous/next prompt and keyboard shortcuts for copying on-screen hashes/paths
+are also great.
 
 [Alacritty]: https://wiki.archlinux.org/title/Alacritty
 [kitty]: https://wiki.archlinux.org/title/Kitty
@@ -817,8 +822,10 @@ these just work with basically no configuration. For better or worse, [fish] is
 not POSIX compliant so it is not compatible with `bash` syntax, scripts, and
 conventions. Some of its choices are better, but differing from the norm can
 make things difficult. If you find that to be unacceptable, I'd recommend [zsh]
-which is POSIX compliant, but after a decent amount of configuration, can still
-provide the same features.
+which is POSIX compliant, but needs a decent amount of configuration to match
+the same feature set. I personally don't think it's worth it because it's
+always possible to just drop into a quick `bash` session to do what you need or
+write a `bash` script.
 
 [fish]: https://wiki.archlinux.org/title/Fish
 [zsh]: https://wiki.archlinux.org/title/Zsh
@@ -1034,17 +1041,19 @@ There are only two types of people: those who have backups and those who
 haven't learned why they should have backups. The long story short is that
 nothing is 100% reliable, so if you have data that would be painful to lose,
 you should have backups of it. There are many possible backup schemes with
-varying pros and cons. To start with, I like to classify the types of copies.
+varying pros and cons. To start with, I like to classify the types of copies:
 
 1.  Convenience copies
     -   Primary copies that you use regularly or plan on using in the future
     -   For making your life easier rather than for redundancy
 2.  Historical copies
     -   Copies of older or deleted versions of the data
-    -   For undoing mistakes
+    -   For undoing accidental deletions or overwrites
 3.  Backup copies
-    -   Copies in different physical location and digital format
-    -   For when your house burns down or you get locked out of your account
+    -   Copies in different physical location and/or digital format
+    -   For when your house burns down, you get locked out of your account,
+        your younger brother decided to play with magnets on top of your hard
+        drive, etc.
 
 Having a distinct copy for each category is a good starting point. Be wary of
 copies that are linked together in some way since they may have shared fate.
