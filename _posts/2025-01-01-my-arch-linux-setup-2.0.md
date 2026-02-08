@@ -868,6 +868,10 @@ can significantly change built-in functionality in fun ways. Unfortunately,
 they sometimes are a bit unstable, especially whenever [GNOME] has an update,
 so do be careful around such times.
 
+-   [Alphabetical App Grid] (`gnome-shell-extension-alphabetical-grid-extension`)
+    -   Does exactly as the name says. Admittedly, typing to search is faster
+        when you know the app name, but I still can't imagine who prefers the
+        chaotic ordering you get without this extension.
 -   [AppIndicator] (`gnome-shell-extension-appindicator`)
     -   Ensures that applications relying on other tray/panel icon frameworks
         will still show an icon in [GNOME].
@@ -895,6 +899,7 @@ so do be careful around such times.
     -   Shows the weather and temperature in an icon next to the date at the
         top. You'll need to configure the location in the [GNOME] Weather app.
 
+[Alphabetical App Grid]: https://github.com/stuarthayhurst/alphabetical-grid-extension
 [AppIndicator]: https://github.com/ubuntu/gnome-shell-extension-appindicator
 [Bing Wallpaper]: https://github.com/neffo/bing-wallpaper-gnome-extension
 [Bing Image of the Day]: https://bingwallpaper.microsoft.com/Windows/bing/bing-wallpaper/
