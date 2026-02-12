@@ -1119,7 +1119,9 @@ carefully.
 
 [Bluetooth]: https://wiki.archlinux.org/title/Bluetooth
 
-#### S.M.A.R.T.
+#### Hard drives
+
+##### S.M.A.R.T.
 
 [S.M.A.R.T.] is a monitoring system built into most HDDs and SSDs that tracks
 various statistics for determining the health of the drive. Accessing this
@@ -1132,6 +1134,29 @@ from spinning up your hard drives for no reason, but otherwise, I don't have
 much experience, so do your own research.
 
 [S.M.A.R.T.]: https://wiki.archlinux.org/title/S.M.A.R.T.
+
+##### TRIM
+
+If you have any SSDs, you should probably just enable [periodic TRIM] for them
+(assuming you don't mind the security implications for [dm-crypt] as discussed
+earlier). This will help with the lifespan of your SSD since it will now be
+able to reuse disk blocks that are unused by your file system. It can also
+provide some performance benefits, though TRIM itself has some costs so I'm
+doubtful it's worth it for the common case.
+
+[periodic TRIM]: https://wiki.archlinux.org/title/Solid_state_drive#Periodic_TRIM
+
+##### Btrfs
+
+If you are using [Btrfs] (or some other file system with checksumming), it's a
+good idea to run a [regular scrub] to confirm all the checksums still match the
+data. Once a month is a pretty typical period, but depending on how paranoid
+you are, you could make it more frequent at the cost of wearing out your hard
+drives. Note that if you have a lot of data to scrub, you may want to
+coordinate the schedule with other activities on your computer since it will be
+very busy reading all of the data you have stored.
+
+[regular scrub]: https://wiki.archlinux.org/title/Btrfs#Start_with_a_service_or_timer
 
 #### Laptops
 
