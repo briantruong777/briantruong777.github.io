@@ -840,6 +840,9 @@ intended.
         when I last left my computer. No, don't ask how many times I've done
         this before. Anyway, you can leave a short grace period if you want to
         be able to "rescue" your machine before it locks.
+    -   Set the `File History`, `Trash`, and `Temporary Files` to be deleted
+        after 30 days to keep things clean and avoid storing things for too
+        long.
 -   *System*
     -   Enable 24-hour time.
     -   Enable showing the week day in the clock at the top.
